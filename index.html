@@ -1,0 +1,726 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบวิเคราะห์ข้อมูล ONET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 1.5rem; }
+        .filter-select { border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">ระบบวิเคราะห์ข้อมูลผลการทดสอบระดับชาติ (ONET)</h1>
+                <p class="text-slate-500">ปีการศึกษา 2567 (ชั้นประถมศึกษาปีที่ 6)</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="refreshData()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">รีเฟรชข้อมูล</button>
+            </div>
+        </header>
+
+        <!-- Filters -->
+        <div class="card mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">วิชา</label>
+                <select id="subjectFilter" class="filter-select" onchange="changeSubject()">
+                    <option value="all">ภาพรวมทุกวิชา</option>
+                    <option value="thai">ภาษาไทย</option>
+                    <option value="math">คณิตศาสตร์</option>
+                    <option value="sci">วิทยาศาสตร์</option>
+                    <option value="eng">ภาษาอังกฤษ</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">อำเภอ</label>
+                <select id="districtFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">โรงเรียน</label>
+                <select id="schoolFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="resetFilters()" class="text-slate-500 hover:text-slate-800 text-sm underline">ล้างตัวกรอง</button>
+            </div>
+        </div>
+
+        <!-- Overview Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <p class="text-blue-100 text-sm uppercase font-semibold">คะแนนเฉลี่ยรวม</p>
+                <h2 id="avgScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                <p class="text-emerald-100 text-sm uppercase font-semibold">คะแนนสูงสุด</p>
+                <h2 id="maxScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+                <p class="text-amber-100 text-sm uppercase font-semibold">คะแนนต่ำสุด</p>
+                <h2 id="minScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-slate-700 to-slate-800 text-white">
+                <p class="text-slate-300 text-sm uppercase font-semibold">จำนวนผู้เข้าสอบ</p>
+                <h2 id="totalStudents" class="text-4xl font-bold mt-2">0</h2>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="card">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">คะแนนเฉลี่ยรายอำเภอ</h3>
+                <canvas id="districtChart"></canvas>
+            </div>
+            <div class="card">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">การกระจายคะแนน</h3>
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- District Summary Card -->
+        <div class="card mb-8 border-l-4 border-indigo-600">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Sheet วิเคราะห์ผล O-NET ป.6 สพป.บึงกาฬ</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div id="summary-thai" class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <p class="text-sm text-slate-500 font-medium mb-1">ภาษาไทย</p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-slate-800" id="dist-avg-thai">0.00</span>
+                        <span class="text-xs text-slate-400">/ 100</span>
+                    </div>
+                    <div id="dist-diff-thai" class="mt-2 text-xs font-bold"></div>
+                </div>
+                <div id="summary-math" class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <p class="text-sm text-slate-500 font-medium mb-1">คณิตศาสตร์</p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-slate-800" id="dist-avg-math">0.00</span>
+                        <span class="text-xs text-slate-400">/ 100</span>
+                    </div>
+                    <div id="dist-diff-math" class="mt-2 text-xs font-bold"></div>
+                </div>
+                <div id="summary-sci" class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <p class="text-sm text-slate-500 font-medium mb-1">วิทยาศาสตร์</p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-slate-800" id="dist-avg-sci">0.00</span>
+                        <span class="text-xs text-slate-400">/ 100</span>
+                    </div>
+                    <div id="dist-diff-sci" class="mt-2 text-xs font-bold"></div>
+                </div>
+                <div id="summary-eng" class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <p class="text-sm text-slate-500 font-medium mb-1">ภาษาอังกฤษ</p>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-slate-800" id="dist-avg-eng">0.00</span>
+                        <span class="text-xs text-slate-400">/ 100</span>
+                    </div>
+                    <div id="dist-diff-eng" class="mt-2 text-xs font-bold"></div>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        <span class="text-xs text-slate-500">สูงกว่าค่าเฉลี่ยประเทศ</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                        <span class="text-xs text-slate-500">ต่ำกว่าค่าเฉลี่ยประเทศ</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 italic">* อ้างอิงคะแนนเฉลี่ยระดับประเทศ ปีการศึกษา 2566</p>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                <h3 class="text-lg font-bold text-slate-800">ข้อมูลรายโรงเรียน</h3>
+                <div class="flex items-center gap-4">
+                    <button onclick="exportToExcel()" class="flex items-center gap-2 bg-emerald-600 text-white px-3 py-1 rounded-lg hover:bg-emerald-700 transition text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        ส่งออก Excel
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-600">แสดง:</span>
+                        <select id="pageSize" class="filter-select !w-auto !py-1" onchange="changePageSize()">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">ทั้งหมด</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead id="tableHeader">
+                        <!-- Header will be inserted here -->
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- Data rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination Controls -->
+            <div id="pagination" class="mt-4 flex justify-center items-center gap-2">
+                <!-- Pagination buttons will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // National Averages (Approximate for 2566 P.6)
+        const NATIONAL_AVG = {
+            thai: 55.03,
+            math: 28.53,
+            sci: 40.75,
+            eng: 37.32,
+            all: 40.41
+        };
+
+        let rawData = {};
+        let allData = [];
+        let filteredData = [];
+        let districtChart = null;
+        let distributionChart = null;
+        
+        // Pagination state
+        let currentPage = 1;
+        let pageSize = 25;
+
+        async function init() {
+            try {
+                const response = await fetch('/api/data');
+                rawData = await response.json();
+                
+                updateDistrictSummary();
+                changeSubject();
+            } catch (error) {
+                console.error('Failed to load data', error);
+            }
+        }
+
+        function updateDistrictSummary() {
+            const subjects = ['thai', 'math', 'sci', 'eng'];
+            subjects.forEach(sub => {
+                const data = rawData[sub] || [];
+                let totalScore = 0;
+                let totalStudents = 0;
+                
+                data.forEach(d => {
+                    const avg = d['คะแนนเฉลี่ย (รวม)'] !== undefined ? d['คะแนนเฉลี่ย (รวม)'] : d['คะแนนเฉลี่ย'];
+                    const students = parseInt(d['จำนวนผู้เข้าสอบ']) || 0;
+                    totalScore += (parseFloat(avg) || 0) * students;
+                    totalStudents += students;
+                });
+                
+                const avg = totalStudents > 0 ? totalScore / totalStudents : 0;
+                const natAvg = NATIONAL_AVG[sub];
+                const diff = avg - natAvg;
+                
+                document.getElementById(`dist-avg-${sub}`).textContent = avg.toFixed(2);
+                const diffEl = document.getElementById(`dist-diff-${sub}`);
+                if (diff >= 0) {
+                    diffEl.textContent = `+${diff.toFixed(2)} จากระดับประเทศ`;
+                    diffEl.className = 'mt-2 text-xs font-bold text-emerald-600';
+                } else {
+                    diffEl.textContent = `${diff.toFixed(2)} จากระดับประเทศ`;
+                    diffEl.className = 'mt-2 text-xs font-bold text-rose-600';
+                }
+            });
+        }
+
+        function changeSubject() {
+            const subject = document.getElementById('subjectFilter').value;
+            
+            if (subject === 'all') {
+                // Aggregate data across all subjects
+                const schoolMap = new Map();
+                
+                Object.keys(rawData).forEach(subKey => {
+                    rawData[subKey].forEach(d => {
+                        const schoolId = d['รหัสโรงเรียน'];
+                        if (!schoolId) return;
+                        
+                        const avg = d['คะแนนเฉลี่ย (รวม)'] !== undefined ? d['คะแนนเฉลี่ย (รวม)'] : d['คะแนนเฉลี่ย'];
+                        const max = d['คะแนนสูงสุด (รวม)'] !== undefined ? d['คะแนนสูงสุด (รวม)'] : d['คะแนนสูงสุด'];
+                        const min = d['คะแนนต่ำสุด (รวม)'] !== undefined ? d['คะแนนต่ำสุด (รวม)'] : d['คะแนนต่ำสุด'];
+                        
+                        if (!schoolMap.has(schoolId)) {
+                            schoolMap.set(schoolId, {
+                                'รหัสโรงเรียน': schoolId,
+                                'ชื่อโรงเรียน': d['ชื่อโรงเรียน'],
+                                'อำเภอที่ตั้งรร.': d['อำเภอที่ตั้งรร.'],
+                                'จำนวนผู้เข้าสอบ': parseInt(d['จำนวนผู้เข้าสอบ']) || 0,
+                                'subjectCount': 0,
+                                'totalAvg': 0,
+                                'maxOfMax': 0,
+                                'minOfMin': Infinity,
+                                'thaiAvg': 0,
+                                'mathAvg': 0,
+                                'sciAvg': 0,
+                                'engAvg': 0
+                            });
+                        }
+                        
+                        const schoolData = schoolMap.get(schoolId);
+                        const currentAvg = parseFloat(avg) || 0;
+                        if (currentAvg > 0) {
+                            schoolData.totalAvg += currentAvg;
+                            schoolData.subjectCount += 1;
+                            schoolData.maxOfMax = Math.max(schoolData.maxOfMax, parseFloat(max) || 0);
+                            const currentMin = parseFloat(min) || 0;
+                            if (currentMin > 0) {
+                                schoolData.minOfMin = Math.min(schoolData.minOfMin, currentMin);
+                            }
+                            
+                            // Store individual subject averages
+                            if (subKey === 'thai') schoolData.thaiAvg = currentAvg;
+                            if (subKey === 'math') schoolData.mathAvg = currentAvg;
+                            if (subKey === 'sci') schoolData.sciAvg = currentAvg;
+                            if (subKey === 'eng') schoolData.engAvg = currentAvg;
+                        }
+                    });
+                });
+                
+                allData = Array.from(schoolMap.values()).map(d => ({
+                    ...d,
+                    'normalizedAvg': d.subjectCount > 0 ? d.totalAvg / d.subjectCount : 0,
+                    'normalizedMax': d.maxOfMax,
+                    'normalizedMin': d.minOfMin === Infinity ? 0 : d.minOfMin
+                }));
+            } else {
+                const data = rawData[subject] || [];
+                // Clean data: convert strings to numbers and normalize column names
+                allData = data.map(d => {
+                    const avg = d['คะแนนเฉลี่ย (รวม)'] !== undefined ? d['คะแนนเฉลี่ย (รวม)'] : d['คะแนนเฉลี่ย'];
+                    const max = d['คะแนนสูงสุด (รวม)'] !== undefined ? d['คะแนนสูงสุด (รวม)'] : d['คะแนนสูงสุด'];
+                    const min = d['คะแนนต่ำสุด (รวม)'] !== undefined ? d['คะแนนต่ำสุด (รวม)'] : d['คะแนนต่ำสุด'];
+
+                    return {
+                        ...d,
+                        'จำนวนผู้เข้าสอบ': parseInt(d['จำนวนผู้เข้าสอบ']) || 0,
+                        'normalizedAvg': parseFloat(avg) || 0,
+                        'normalizedMax': parseFloat(max) || 0,
+                        'normalizedMin': parseFloat(min) || 0
+                    };
+                });
+            }
+
+            currentPage = 1;
+            populateFilters();
+            applyFilters();
+        }
+
+        function populateFilters() {
+            const districts = [...new Set(allData.map(d => d['อำเภอที่ตั้งรร.']))].filter(Boolean).sort();
+            const districtSelect = document.getElementById('districtFilter');
+            districtSelect.innerHTML = '<option value="">ทั้งหมด</option>';
+            districts.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                districtSelect.appendChild(opt);
+            });
+
+            updateSchoolFilter();
+        }
+
+        function updateSchoolFilter() {
+            const district = document.getElementById('districtFilter').value;
+            const schools = [...new Set(allData
+                .filter(d => !district || d['อำเภอที่ตั้งรร.'] === district)
+                .map(d => d['ชื่อโรงเรียน'])
+            )].sort();
+
+            const schoolSelect = document.getElementById('schoolFilter');
+            schoolSelect.innerHTML = '<option value="">ทั้งหมด</option>';
+            schools.forEach(s => {
+                if (s) {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    schoolSelect.appendChild(opt);
+                }
+            });
+        }
+
+        function applyFilters() {
+            const district = document.getElementById('districtFilter').value;
+            const school = document.getElementById('schoolFilter').value;
+
+            filteredData = allData.filter(d => {
+                const matchDistrict = !district || d['อำเภอที่ตั้งรร.'] === district;
+                const matchSchool = !school || d['ชื่อโรงเรียน'] === school;
+                return matchDistrict && matchSchool;
+            });
+
+            // Reset to page 1 when filters change
+            if (event && (event.target.id === 'districtFilter' || event.target.id === 'schoolFilter')) {
+                currentPage = 1;
+            }
+
+            updateOverview();
+            updateCharts();
+            updateTable();
+            
+            // If district changed but school didn't, update school list
+            if (event && event.target.id === 'districtFilter') {
+                updateSchoolFilter();
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('districtFilter').value = '';
+            document.getElementById('schoolFilter').value = '';
+            updateSchoolFilter();
+            applyFilters();
+        }
+
+        function updateOverview() {
+            const totalStudents = filteredData.reduce((sum, d) => sum + d['จำนวนผู้เข้าสอบ'], 0);
+            const avgScore = totalStudents > 0 
+                ? filteredData.reduce((sum, d) => sum + (d['normalizedAvg'] * d['จำนวนผู้เข้าสอบ']), 0) / totalStudents 
+                : 0;
+            const maxScore = filteredData.length > 0 ? Math.max(...filteredData.map(d => d['normalizedMax'])) : 0;
+            const minScore = filteredData.length > 0 ? Math.min(...filteredData.filter(d => d['normalizedMin'] > 0).map(d => d['normalizedMin'])) : 0;
+
+            document.getElementById('totalStudents').textContent = totalStudents.toLocaleString();
+            document.getElementById('avgScore').textContent = avgScore.toFixed(2);
+            document.getElementById('maxScore').textContent = maxScore.toFixed(2);
+            document.getElementById('minScore').textContent = (minScore === Infinity ? 0 : minScore).toFixed(2);
+        }
+
+        function updateCharts() {
+            const subject = document.getElementById('subjectFilter').value;
+            
+            // District Chart
+            const districtData = {};
+            filteredData.forEach(d => {
+                const dist = d['อำเภอที่ตั้งรร.'];
+                if (!districtData[dist]) districtData[dist] = { sum: 0, count: 0 };
+                districtData[dist].sum += d['normalizedAvg'] * d['จำนวนผู้เข้าสอบ'];
+                districtData[dist].count += d['จำนวนผู้เข้าสอบ'];
+            });
+
+            const labels = Object.keys(districtData).sort();
+            const values = labels.map(l => districtData[l].count > 0 ? districtData[l].sum / districtData[l].count : 0);
+
+            if (districtChart) districtChart.destroy();
+            districtChart = new Chart(document.getElementById('districtChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: subject === 'all' ? 'คะแนนเฉลี่ยรวมทุกวิชา' : 'คะแนนเฉลี่ย',
+                        data: values,
+                        backgroundColor: 'rgba(79, 70, 229, 0.6)',
+                        borderColor: 'rgb(79, 70, 229)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            // Distribution Chart or Subject Comparison if "All"
+            if (subject === 'all') {
+                const subjectAverages = {};
+                Object.keys(rawData).forEach(subKey => {
+                    const subData = rawData[subKey];
+                    let totalScore = 0;
+                    let totalStudents = 0;
+                    
+                    subData.forEach(d => {
+                        const avg = d['คะแนนเฉลี่ย (รวม)'] !== undefined ? d['คะแนนเฉลี่ย (รวม)'] : d['คะแนนเฉลี่ย'];
+                        const students = parseInt(d['จำนวนผู้เข้าสอบ']) || 0;
+                        totalScore += (parseFloat(avg) || 0) * students;
+                        totalStudents += students;
+                    });
+                    
+                    const subName = {
+                        'thai': 'ภาษาไทย',
+                        'math': 'คณิตศาสตร์',
+                        'sci': 'วิทยาศาสตร์',
+                        'eng': 'ภาษาอังกฤษ'
+                    }[subKey];
+                    
+                    subjectAverages[subName] = totalStudents > 0 ? totalScore / totalStudents : 0;
+                });
+
+                if (distributionChart) distributionChart.destroy();
+                distributionChart = new Chart(document.getElementById('distributionChart'), {
+                    type: 'radar',
+                    data: {
+                        labels: Object.keys(subjectAverages),
+                        datasets: [{
+                            label: 'คะแนนเฉลี่ยรายวิชา',
+                            data: Object.values(subjectAverages),
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            pointBackgroundColor: 'rgb(16, 185, 129)',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+                
+                // Update chart title
+                document.getElementById('distributionChart').previousElementSibling.textContent = 'เปรียบเทียบคะแนนเฉลี่ยรายวิชา';
+            } else {
+                const bins = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+                const binCounts = new Array(bins.length - 1).fill(0);
+                filteredData.forEach(d => {
+                    const score = d['normalizedAvg'];
+                    for (let i = 0; i < bins.length - 1; i++) {
+                        if (score >= bins[i] && score < bins[i+1]) {
+                            binCounts[i]++;
+                            break;
+                        }
+                    }
+                });
+
+                if (distributionChart) distributionChart.destroy();
+                distributionChart = new Chart(document.getElementById('distributionChart'), {
+                    type: 'line',
+                    data: {
+                        labels: bins.slice(0, -1).map((b, i) => `${b}-${bins[i+1]}`),
+                        datasets: [{
+                            label: 'จำนวนโรงเรียน',
+                            data: binCounts,
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+                
+                // Update chart title
+                document.getElementById('distributionChart').previousElementSibling.textContent = 'การกระจายคะแนน';
+            }
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('dataTableBody');
+            const thead = document.getElementById('tableHeader');
+            const subject = document.getElementById('subjectFilter').value;
+            
+            // Update Header
+            if (subject === 'all') {
+                thead.innerHTML = `
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="p-4 font-semibold text-slate-700">รหัสโรงเรียน</th>
+                        <th class="p-4 font-semibold text-slate-700">โรงเรียน</th>
+                        <th class="p-4 font-semibold text-slate-700">อำเภอ</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">ผู้เข้าสอบ</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">ไทย</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">คณิต</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">วิทย์</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">อังกฤษ</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ยรวม</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">สรุป</th>
+                    </tr>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="p-4 font-semibold text-slate-700">รหัสโรงเรียน</th>
+                        <th class="p-4 font-semibold text-slate-700">โรงเรียน</th>
+                        <th class="p-4 font-semibold text-slate-700">อำเภอ</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">ผู้เข้าสอบ</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">สูงสุด</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">ต่ำสุด</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ย</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">สรุป</th>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = '';
+            
+            // Sort by average score descending
+            const sorted = [...filteredData].sort((a, b) => b['normalizedAvg'] - a['normalizedAvg']);
+            
+            // Pagination logic
+            const currentSize = pageSize === 'all' ? sorted.length : parseInt(pageSize);
+            const totalPages = Math.ceil(sorted.length / currentSize);
+            const start = (currentPage - 1) * currentSize;
+            const end = start + currentSize;
+            const pageData = sorted.slice(start, end);
+
+            const natAvg = NATIONAL_AVG[subject];
+
+            pageData.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition';
+                
+                const diff = d['normalizedAvg'] - natAvg;
+                const summaryHtml = diff >= 0 
+                    ? `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">สูงกว่าประเทศ (+${diff.toFixed(2)})</span>`
+                    : `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold">ต่ำกว่าประเทศ (${diff.toFixed(2)})</span>`;
+
+                if (subject === 'all') {
+                    tr.innerHTML = `
+                        <td class="p-4 text-slate-500 text-sm font-mono">${d['รหัสโรงเรียน']}</td>
+                        <td class="p-4 text-slate-800 font-medium">${d['ชื่อโรงเรียน']}</td>
+                        <td class="p-4 text-slate-600">${d['อำเภอที่ตั้งรร.']}</td>
+                        <td class="p-4 text-center text-slate-600">${d['จำนวนผู้เข้าสอบ']}</td>
+                        <td class="p-4 text-center text-slate-600">${d['thaiAvg'].toFixed(2)}</td>
+                        <td class="p-4 text-center text-slate-600">${d['mathAvg'].toFixed(2)}</td>
+                        <td class="p-4 text-center text-slate-600">${d['sciAvg'].toFixed(2)}</td>
+                        <td class="p-4 text-center text-slate-600">${d['engAvg'].toFixed(2)}</td>
+                        <td class="p-4 text-center font-bold text-indigo-600">${d['normalizedAvg'].toFixed(2)}</td>
+                        <td class="p-4 text-center">${summaryHtml}</td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="p-4 text-slate-500 text-sm font-mono">${d['รหัสโรงเรียน']}</td>
+                        <td class="p-4 text-slate-800 font-medium">${d['ชื่อโรงเรียน']}</td>
+                        <td class="p-4 text-slate-600">${d['อำเภอที่ตั้งรร.']}</td>
+                        <td class="p-4 text-center text-slate-600">${d['จำนวนผู้เข้าสอบ']}</td>
+                        <td class="p-4 text-center text-emerald-600">${d['normalizedMax'].toFixed(2)}</td>
+                        <td class="p-4 text-center text-amber-600">${d['normalizedMin'].toFixed(2)}</td>
+                        <td class="p-4 text-center font-bold text-indigo-600">${d['normalizedAvg'].toFixed(2)}</td>
+                        <td class="p-4 text-center">${summaryHtml}</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+
+            updatePagination(totalPages);
+        }
+
+        function updatePagination(totalPages) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+            
+            if (totalPages <= 1) return;
+
+            // Previous
+            const prev = document.createElement('button');
+            prev.textContent = 'ก่อนหน้า';
+            prev.className = `px-3 py-1 rounded border ${currentPage === 1 ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-slate-600 border-slate-300 hover:bg-slate-50'}`;
+            prev.onclick = () => { if (currentPage > 1) { currentPage--; updateTable(); } };
+            container.appendChild(prev);
+
+            // Page numbers (limited)
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = `px-3 py-1 rounded border ${i === currentPage ? 'bg-indigo-600 text-white border-indigo-600' : 'text-slate-600 border-slate-300 hover:bg-slate-50'}`;
+                btn.onclick = () => { currentPage = i; updateTable(); };
+                container.appendChild(btn);
+            }
+
+            // Next
+            const next = document.createElement('button');
+            next.textContent = 'ถัดไป';
+            next.className = `px-3 py-1 rounded border ${currentPage === totalPages ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-slate-600 border-slate-300 hover:bg-slate-50'}`;
+            next.onclick = () => { if (currentPage < totalPages) { currentPage++; updateTable(); } };
+            container.appendChild(next);
+        }
+
+        function changePageSize() {
+            pageSize = document.getElementById('pageSize').value;
+            currentPage = 1;
+            updateTable();
+        }
+
+        function exportToExcel() {
+            const subject = document.getElementById('subjectFilter').value;
+            const subjectName = document.getElementById('subjectFilter').options[document.getElementById('subjectFilter').selectedIndex].text;
+            const sorted = [...filteredData].sort((a, b) => b['normalizedAvg'] - a['normalizedAvg']);
+            const natAvg = NATIONAL_AVG[subject];
+
+            let exportData = [];
+            
+            if (subject === 'all') {
+                exportData = sorted.map(d => ({
+                    'รหัสโรงเรียน': d['รหัสโรงเรียน'],
+                    'โรงเรียน': d['ชื่อโรงเรียน'],
+                    'อำเภอ': d['อำเภอที่ตั้งรร.'],
+                    'จำนวนผู้เข้าสอบ': d['จำนวนผู้เข้าสอบ'],
+                    'คะแนนเฉลี่ยภาษาไทย': d['thaiAvg'].toFixed(2),
+                    'คะแนนเฉลี่ยคณิตศาสตร์': d['mathAvg'].toFixed(2),
+                    'คะแนนเฉลี่ยวิทยาศาสตร์': d['sciAvg'].toFixed(2),
+                    'คะแนนเฉลี่ยภาษาอังกฤษ': d['engAvg'].toFixed(2),
+                    'คะแนนเฉลี่ยรวม 4 วิชา': d['normalizedAvg'].toFixed(2),
+                    'ส่วนต่างระดับประเทศ': (d['normalizedAvg'] - natAvg).toFixed(2),
+                    'สรุป': (d['normalizedAvg'] - natAvg) >= 0 ? 'สูงกว่าค่าเฉลี่ยประเทศ' : 'ต่ำกว่าค่าเฉลี่ยประเทศ'
+                }));
+            } else {
+                exportData = sorted.map(d => ({
+                    'รหัสโรงเรียน': d['รหัสโรงเรียน'],
+                    'โรงเรียน': d['ชื่อโรงเรียน'],
+                    'อำเภอ': d['อำเภอที่ตั้งรร.'],
+                    'จำนวนผู้เข้าสอบ': d['จำนวนผู้เข้าสอบ'],
+                    'คะแนนสูงสุด': d['normalizedMax'].toFixed(2),
+                    'คะแนนต่ำสุด': d['normalizedMin'].toFixed(2),
+                    'คะแนนเฉลี่ย': d['normalizedAvg'].toFixed(2),
+                    'ส่วนต่างระดับประเทศ': (d['normalizedAvg'] - natAvg).toFixed(2),
+                    'สรุป': (d['normalizedAvg'] - natAvg) >= 0 ? 'สูงกว่าค่าเฉลี่ยประเทศ' : 'ต่ำกว่าค่าเฉลี่ยประเทศ'
+                }));
+            }
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data");
+            
+            // Auto-size columns
+            const colWidths = Object.keys(exportData[0] || {}).map(key => ({ wch: Math.max(key.length * 2, 15) }));
+            ws['!cols'] = colWidths;
+
+            const fileName = `ONET_Export_${subjectName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        }
+
+        async function refreshData() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'กำลังโหลด...';
+            await fetch('/api/refresh');
+            await init();
+            btn.disabled = false;
+            btn.textContent = 'รีเฟรชข้อมูล';
+        }
+
+        init();
+    </script>
+</body>
+</html>
+
