@@ -29,7 +29,7 @@
         </header>
 
         <!-- Filters -->
-        <div class="card mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">วิชา</label>
                 <select id="subjectFilter" class="filter-select" onchange="changeSubject()">
@@ -52,8 +52,65 @@
                     <option value="">ทั้งหมด</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">เปรียบเทียบกับ</label>
+                <select id="comparisonLevel" class="filter-select" onchange="applyFilters()">
+                    <option value="national">ระดับประเทศ</option>
+                    <option value="ministry">ระดับ สพฐ.</option>
+                    <option value="district">ระดับเขตพื้นที่</option>
+                </select>
+            </div>
             <div class="flex items-end">
                 <button onclick="resetFilters()" class="text-slate-500 hover:text-slate-800 text-sm underline">ล้างตัวกรอง</button>
+            </div>
+        </div>
+
+        <!-- Comparison Levels Section -->
+        <div class="mb-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">ค่าเฉลี่ยระดับต่างๆ</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- National -->
+                <div class="card border-t-4 border-blue-500">
+                    <h4 class="font-bold text-slate-800 mb-3">ระดับประเทศ</h4>
+                    <div class="grid grid-cols-2 gap-y-2 text-sm">
+                        <div class="text-slate-500">ภาษาไทย: <span class="font-bold text-slate-800" id="card-national-thai">0.00</span></div>
+                        <div class="text-slate-500">คณิตศาสตร์: <span class="font-bold text-slate-800" id="card-national-math">0.00</span></div>
+                        <div class="text-slate-500">วิทยาศาสตร์: <span class="font-bold text-slate-800" id="card-national-sci">0.00</span></div>
+                        <div class="text-slate-500">ภาษาอังกฤษ: <span class="font-bold text-slate-800" id="card-national-eng">0.00</span></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-slate-500 text-sm">เฉลี่ยรวม:</span>
+                        <span class="text-xl font-bold text-blue-600" id="card-national-all">0.00</span>
+                    </div>
+                </div>
+                <!-- Ministry -->
+                <div class="card border-t-4 border-purple-500">
+                    <h4 class="font-bold text-slate-800 mb-3">ระดับ สพฐ.</h4>
+                    <div class="grid grid-cols-2 gap-y-2 text-sm">
+                        <div class="text-slate-500">ภาษาไทย: <span class="font-bold text-slate-800" id="card-ministry-thai">0.00</span></div>
+                        <div class="text-slate-500">คณิตศาสตร์: <span class="font-bold text-slate-800" id="card-ministry-math">0.00</span></div>
+                        <div class="text-slate-500">วิทยาศาสตร์: <span class="font-bold text-slate-800" id="card-ministry-sci">0.00</span></div>
+                        <div class="text-slate-500">ภาษาอังกฤษ: <span class="font-bold text-slate-800" id="card-ministry-eng">0.00</span></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-slate-500 text-sm">เฉลี่ยรวม:</span>
+                        <span class="text-xl font-bold text-purple-600" id="card-ministry-all">0.00</span>
+                    </div>
+                </div>
+                <!-- District -->
+                <div class="card border-t-4 border-amber-500">
+                    <h4 class="font-bold text-slate-800 mb-3">ระดับเขตพื้นที่</h4>
+                    <div class="grid grid-cols-2 gap-y-2 text-sm">
+                        <div class="text-slate-500">ภาษาไทย: <span class="font-bold text-slate-800" id="card-district-thai">0.00</span></div>
+                        <div class="text-slate-500">คณิตศาสตร์: <span class="font-bold text-slate-800" id="card-district-math">0.00</span></div>
+                        <div class="text-slate-500">วิทยาศาสตร์: <span class="font-bold text-slate-800" id="card-district-sci">0.00</span></div>
+                        <div class="text-slate-500">ภาษาอังกฤษ: <span class="font-bold text-slate-800" id="card-district-eng">0.00</span></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-slate-500 text-sm">เฉลี่ยรวม:</span>
+                        <span class="text-xl font-bold text-amber-600" id="card-district-all">0.00</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -78,10 +135,14 @@
         </div>
 
         <!-- Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             <div class="card">
                 <h3 class="text-lg font-bold mb-4 text-slate-800">คะแนนเฉลี่ยรายอำเภอ</h3>
                 <canvas id="districtChart"></canvas>
+            </div>
+            <div class="card">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">เปรียบเทียบค่าเฉลี่ย</h3>
+                <canvas id="comparisonChart"></canvas>
             </div>
             <div class="card">
                 <h3 class="text-lg font-bold mb-4 text-slate-800">การกระจายคะแนน</h3>
@@ -186,13 +247,11 @@
     </div>
 
     <script>
-        // National Averages (Approximate for 2566 P.6)
-        const NATIONAL_AVG = {
-            thai: 55.03,
-            math: 28.53,
-            sci: 40.75,
-            eng: 37.32,
-            all: 40.41
+        // Comparison Levels Averages
+        let COMPARISON_LEVELS = {
+            national: { name: 'ระดับประเทศ', thai: 0, math: 0, sci: 0, eng: 0, all: 0 },
+            ministry: { name: 'ระดับ สพฐ.', thai: 0, math: 0, sci: 0, eng: 0, all: 0 },
+            district: { name: 'ระดับเขตพื้นที่', thai: 0, math: 0, sci: 0, eng: 0, all: 0 }
         };
 
         let rawData = {};
@@ -200,6 +259,7 @@
         let filteredData = [];
         let districtChart = null;
         let distributionChart = null;
+        let comparisonChart = null;
         
         // Pagination state
         let currentPage = 1;
@@ -243,6 +303,15 @@
                         newData[id] = jsonData;
                         console.log(`Loaded ${jsonData.length} records for ${trimmedName}`);
                     }
+
+                    // Look for comparison data sheet
+                    if (trimmedName === 'วิเคราะห์ผล O-NET ป.6 สพป.บึงกาฬ' || trimmedName === 'ค่าเฉลี่ยระดับต่างๆ' || trimmedName.includes('ค่าเฉลี่ยระดับ')) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        if (jsonData.length > 0) {
+                            updateComparisonLevelsFromData(jsonData);
+                        }
+                    }
                 });
 
                 if (Object.keys(newData).length === 0) {
@@ -251,6 +320,7 @@
 
                 rawData = newData;
                 
+                updateComparisonCards();
                 updateDistrictSummary();
                 changeSubject();
             } catch (error) {
@@ -262,8 +332,67 @@
             }
         }
 
+        function updateComparisonLevelsFromData(data) {
+            // Map sheet data to COMPARISON_LEVELS object
+            const levelMapping = {
+                'ระดับประเทศ': 'national',
+                'ประเทศ': 'national',
+                'ระดับกระทรวงฯ': 'ministry',
+                'ระดับสังกัด': 'ministry',
+                'สพฐ.': 'ministry',
+                'ระดับเขตพื้นที่': 'district',
+                'เขตพื้นที่': 'district',
+                'สพป.': 'district'
+            };
+
+            data.forEach(row => {
+                // Try to find the level name in any column that might contain it
+                const levelName = row['ระดับ'] || row['ชื่อระดับ'] || row['Level'] || Object.values(row)[0];
+                if (!levelName || typeof levelName !== 'string') return;
+
+                // Find the key by checking if levelName contains any of the mapping keys
+                let key = null;
+                for (const [mKey, mVal] of Object.entries(levelMapping)) {
+                    if (levelName.includes(mKey)) {
+                        key = mVal;
+                        break;
+                    }
+                }
+
+                if (key) {
+                    COMPARISON_LEVELS[key] = {
+                        name: levelName,
+                        thai: parseFloat(row['ภาษาไทย'] || row['Thai'] || row['ไทย']) || 0,
+                        math: parseFloat(row['คณิตศาสตร์'] || row['Math'] || row['คณิต']) || 0,
+                        sci: parseFloat(row['วิทยาศาสตร์'] || row['Science'] || row['วิทย์']) || 0,
+                        eng: parseFloat(row['ภาษาอังกฤษ'] || row['English'] || row['อังกฤษ']) || 0,
+                        all: parseFloat(row['เฉลี่ยรวม'] || row['คะแนนเฉลี่ยรวม'] || row['Average'] || row['รวม']) || 0
+                    };
+                }
+            });
+            console.log('Updated COMPARISON_LEVELS from sheet:', COMPARISON_LEVELS);
+        }
+
+        function updateComparisonCards() {
+            const levels = ['national', 'ministry', 'district'];
+            const subjects = ['thai', 'math', 'sci', 'eng', 'all'];
+
+            levels.forEach(level => {
+                subjects.forEach(sub => {
+                    const el = document.getElementById(`card-${level}-${sub}`);
+                    if (el) {
+                        el.textContent = COMPARISON_LEVELS[level][sub].toFixed(2);
+                    }
+                });
+            });
+        }
+
         function updateDistrictSummary() {
             const subjects = ['thai', 'math', 'sci', 'eng'];
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const levelName = levelData.name;
+
             subjects.forEach(sub => {
                 const data = rawData[sub] || [];
                 let totalScore = 0;
@@ -277,16 +406,16 @@
                 });
                 
                 const avg = totalStudents > 0 ? totalScore / totalStudents : 0;
-                const natAvg = NATIONAL_AVG[sub];
-                const diff = avg - natAvg;
+                const compareAvg = levelData[sub];
+                const diff = avg - compareAvg;
                 
                 document.getElementById(`dist-avg-${sub}`).textContent = avg.toFixed(2);
                 const diffEl = document.getElementById(`dist-diff-${sub}`);
                 if (diff >= 0) {
-                    diffEl.textContent = `+${diff.toFixed(2)} จากระดับประเทศ`;
+                    diffEl.textContent = `+${diff.toFixed(2)} จาก${levelName}`;
                     diffEl.className = 'mt-2 text-xs font-bold text-emerald-600';
                 } else {
-                    diffEl.textContent = `${diff.toFixed(2)} จากระดับประเทศ`;
+                    diffEl.textContent = `${diff.toFixed(2)} จาก${levelName}`;
                     diffEl.className = 'mt-2 text-xs font-bold text-rose-600';
                 }
             });
@@ -455,6 +584,9 @@
 
         function updateCharts() {
             const subject = document.getElementById('subjectFilter').value;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const levelName = levelData.name;
             
             // District Chart
             const districtData = {};
@@ -480,6 +612,49 @@
                         borderColor: 'rgb(79, 70, 229)',
                         borderWidth: 1
                     }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+
+            // Comparison Chart
+            const subjectKeys = ['thai', 'math', 'sci', 'eng'];
+            const subjectLabels = ['ภาษาไทย', 'คณิตศาสตร์', 'วิทยาศาสตร์', 'ภาษาอังกฤษ'];
+            
+            const ourAverages = subjectKeys.map(subKey => {
+                const subData = rawData[subKey] || [];
+                let totalScore = 0;
+                let totalStudents = 0;
+                subData.forEach(d => {
+                    const avg = d['คะแนนเฉลี่ย (รวม)'] !== undefined ? d['คะแนนเฉลี่ย (รวม)'] : d['คะแนนเฉลี่ย'];
+                    const students = parseInt(d['จำนวนผู้เข้าสอบ']) || 0;
+                    totalScore += (parseFloat(avg) || 0) * students;
+                    totalStudents += students;
+                });
+                return totalStudents > 0 ? totalScore / totalStudents : 0;
+            });
+
+            const levelAverages = subjectKeys.map(subKey => levelData[subKey]);
+
+            if (comparisonChart) comparisonChart.destroy();
+            comparisonChart = new Chart(document.getElementById('comparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: subjectLabels,
+                    datasets: [
+                        {
+                            label: 'ค่าเฉลี่ย สพป.บึงกาฬ',
+                            data: ourAverages,
+                            backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                        },
+                        {
+                            label: `ค่าเฉลี่ย${levelName}`,
+                            data: levelAverages,
+                            backgroundColor: 'rgba(203, 213, 225, 0.8)',
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -580,6 +755,9 @@
             const tbody = document.getElementById('dataTableBody');
             const thead = document.getElementById('tableHeader');
             const subject = document.getElementById('subjectFilter').value;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const levelName = levelData.name;
             
             // Update Header
             if (subject === 'all') {
@@ -594,7 +772,7 @@
                         <th class="p-4 font-semibold text-slate-700 text-center">วิทย์</th>
                         <th class="p-4 font-semibold text-slate-700 text-center">อังกฤษ</th>
                         <th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ยรวม</th>
-                        <th class="p-4 font-semibold text-slate-700 text-center">สรุป</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">เทียบ${levelName}</th>
                     </tr>
                 `;
             } else {
@@ -607,7 +785,7 @@
                         <th class="p-4 font-semibold text-slate-700 text-center">สูงสุด</th>
                         <th class="p-4 font-semibold text-slate-700 text-center">ต่ำสุด</th>
                         <th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ย</th>
-                        <th class="p-4 font-semibold text-slate-700 text-center">สรุป</th>
+                        <th class="p-4 font-semibold text-slate-700 text-center">เทียบ${levelName}</th>
                     </tr>
                 `;
             }
@@ -624,16 +802,16 @@
             const end = start + currentSize;
             const pageData = sorted.slice(start, end);
 
-            const natAvg = NATIONAL_AVG[subject];
+            const compareAvg = levelData[subject];
 
             pageData.forEach(d => {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition';
                 
-                const diff = d['normalizedAvg'] - natAvg;
+                const diff = d['normalizedAvg'] - compareAvg;
                 const summaryHtml = diff >= 0 
-                    ? `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">สูงกว่าประเทศ (+${diff.toFixed(2)})</span>`
-                    : `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold">ต่ำกว่าประเทศ (${diff.toFixed(2)})</span>`;
+                    ? `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">+${diff.toFixed(2)}</span>`
+                    : `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold">${diff.toFixed(2)}</span>`;
 
                 if (subject === 'all') {
                     tr.innerHTML = `
@@ -709,8 +887,11 @@
         function exportToExcel() {
             const subject = document.getElementById('subjectFilter').value;
             const subjectName = document.getElementById('subjectFilter').options[document.getElementById('subjectFilter').selectedIndex].text;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const levelName = levelData.name;
             const sorted = [...filteredData].sort((a, b) => b['normalizedAvg'] - a['normalizedAvg']);
-            const natAvg = NATIONAL_AVG[subject];
+            const compareAvg = levelData[subject];
 
             let exportData = [];
             
@@ -725,8 +906,8 @@
                     'คะแนนเฉลี่ยวิทยาศาสตร์': d['sciAvg'].toFixed(2),
                     'คะแนนเฉลี่ยภาษาอังกฤษ': d['engAvg'].toFixed(2),
                     'คะแนนเฉลี่ยรวม 4 วิชา': d['normalizedAvg'].toFixed(2),
-                    'ส่วนต่างระดับประเทศ': (d['normalizedAvg'] - natAvg).toFixed(2),
-                    'สรุป': (d['normalizedAvg'] - natAvg) >= 0 ? 'สูงกว่าค่าเฉลี่ยประเทศ' : 'ต่ำกว่าค่าเฉลี่ยประเทศ'
+                    [`ส่วนต่าง${levelName}`]: (d['normalizedAvg'] - compareAvg).toFixed(2),
+                    'สรุป': (d['normalizedAvg'] - compareAvg) >= 0 ? `สูงกว่าค่าเฉลี่ย${levelName}` : `ต่ำกว่าค่าเฉลี่ย${levelName}`
                 }));
             } else {
                 exportData = sorted.map(d => ({
@@ -737,8 +918,8 @@
                     'คะแนนสูงสุด': d['normalizedMax'].toFixed(2),
                     'คะแนนต่ำสุด': d['normalizedMin'].toFixed(2),
                     'คะแนนเฉลี่ย': d['normalizedAvg'].toFixed(2),
-                    'ส่วนต่างระดับประเทศ': (d['normalizedAvg'] - natAvg).toFixed(2),
-                    'สรุป': (d['normalizedAvg'] - natAvg) >= 0 ? 'สูงกว่าค่าเฉลี่ยประเทศ' : 'ต่ำกว่าค่าเฉลี่ยประเทศ'
+                    [`ส่วนต่าง${levelName}`]: (d['normalizedAvg'] - compareAvg).toFixed(2),
+                    'สรุป': (d['normalizedAvg'] - compareAvg) >= 0 ? `สูงกว่าค่าเฉลี่ย${levelName}` : `ต่ำกว่าค่าเฉลี่ย${levelName}`
                 }));
             }
 
