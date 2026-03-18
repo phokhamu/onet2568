@@ -21,7 +21,7 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">ระบบวิเคราะห์ข้อมูลผลการทดสอบระดับชาติ (ONET)</h1>
-                <p class="text-slate-500">ปีการศึกษา 2567 (ชั้นประถมศึกษาปีที่ 6)</p>
+                <p class="text-slate-500">ปีการศึกษา 2568 (ชั้นประถมศึกษาปีที่ 6)</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="refreshData()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">รีเฟรชข้อมูล</button>
@@ -205,15 +205,38 @@
         let currentPage = 1;
         let pageSize = 25;
 
+        const XLSX_URL = 'https://docs.google.com/spreadsheets/d/1hKGYH1uB-S9XFSB_Y50-Eksyf57Du0XBJP7iEhoxkkw/export?format=xlsx';
+
         async function init() {
             try {
-                const response = await fetch('/api/data');
-                rawData = await response.json();
+                const response = await fetch(XLSX_URL);
+                const buffer = await response.arrayBuffer();
+                const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                
+                const newData = {};
+                const sheetMapping = {
+                    'ภาษาไทย': 'thai',
+                    'คณิตศาสตร์': 'math',
+                    'วิทยาศาสตร์': 'sci',
+                    'ภาษาอังกฤษ': 'eng'
+                };
+
+                workbook.SheetNames.forEach(sheetName => {
+                    const id = sheetMapping[sheetName];
+                    if (id) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        newData[id] = jsonData;
+                    }
+                });
+
+                rawData = newData;
                 
                 updateDistrictSummary();
                 changeSubject();
             } catch (error) {
-                console.error('Failed to load data', error);
+                console.error('Failed to load data from Google Sheets', error);
+                alert('ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
             }
         }
 
@@ -712,11 +735,16 @@
         async function refreshData() {
             const btn = event.target;
             btn.disabled = true;
+            const originalText = btn.textContent;
             btn.textContent = 'กำลังโหลด...';
-            await fetch('/api/refresh');
-            await init();
-            btn.disabled = false;
-            btn.textContent = 'รีเฟรชข้อมูล';
+            try {
+                await init();
+            } catch (error) {
+                console.error('Refresh failed', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         }
 
         init();
