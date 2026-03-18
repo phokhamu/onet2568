@@ -21,13 +21,33 @@
         <!-- Header -->
         <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">ระบบวิเคราะห์ข้อมูลผลการทดสอบระดับชาติ (ONET)</h1>
-                <p class="text-slate-500">ปีการศึกษา 2568 (ชั้นประถมศึกษาปีที่ 6)</p>
+                <h1 class="text-3xl font-bold text-slate-800">ผลการทดสอบระดับชาติ (ONET) ปีการศึกษา 2568 </h1>
+                <p class="text-slate-500">(ชั้นประถมศึกษาปีที่ 6)</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="refreshData()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">รีเฟรชข้อมูล</button>
             </div>
         </header>
+
+        <!-- Overview Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <p class="text-blue-100 text-sm uppercase font-semibold">คะแนนเฉลี่ยรวม</p>
+                <h2 id="avgScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                <p class="text-emerald-100 text-sm uppercase font-semibold">คะแนนสูงสุด</p>
+                <h2 id="maxScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+                <p class="text-amber-100 text-sm uppercase font-semibold">คะแนนต่ำสุด</p>
+                <h2 id="minScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-slate-700 to-slate-800 text-white">
+                <p class="text-slate-300 text-sm uppercase font-semibold">จำนวนผู้เข้าสอบ</p>
+                <h2 id="totalStudents" class="text-4xl font-bold mt-2">0</h2>
+            </div>
+        </div>
 
         <!-- Comparison Levels Section -->
         <div class="mb-8">
@@ -79,7 +99,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="card mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="card mb-8 grid grid-cols-1 md:grid-cols-6 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">วิชา</label>
                 <select id="subjectFilter" class="filter-select" onchange="changeSubject()">
@@ -103,6 +123,15 @@
                 </select>
             </div>
             <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">ผลการเปรียบเทียบ</label>
+                <select id="resultFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                    <option value="above">สูงกว่า</option>
+                    <option value="equal">เท่ากับ</option>
+                    <option value="below">ต่ำกว่า</option>
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">เปรียบเทียบกับ</label>
                 <select id="comparisonLevel" class="filter-select" onchange="applyFilters()">
                     <option value="national">ระดับประเทศ</option>
@@ -112,26 +141,6 @@
             </div>
             <div class="flex items-end">
                 <button onclick="resetFilters()" class="text-slate-500 hover:text-slate-800 text-sm underline">ล้างตัวกรอง</button>
-            </div>
-        </div>
-
-        <!-- Overview Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                <p class="text-blue-100 text-sm uppercase font-semibold">คะแนนเฉลี่ยรวม</p>
-                <h2 id="avgScore" class="text-4xl font-bold mt-2">0.00</h2>
-            </div>
-            <div class="card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                <p class="text-emerald-100 text-sm uppercase font-semibold">คะแนนสูงสุด</p>
-                <h2 id="maxScore" class="text-4xl font-bold mt-2">0.00</h2>
-            </div>
-            <div class="card bg-gradient-to-br from-amber-500 to-amber-600 text-white">
-                <p class="text-amber-100 text-sm uppercase font-semibold">คะแนนต่ำสุด</p>
-                <h2 id="minScore" class="text-4xl font-bold mt-2">0.00</h2>
-            </div>
-            <div class="card bg-gradient-to-br from-slate-700 to-slate-800 text-white">
-                <p class="text-slate-300 text-sm uppercase font-semibold">จำนวนผู้เข้าสอบ</p>
-                <h2 id="totalStudents" class="text-4xl font-bold mt-2">0</h2>
             </div>
         </div>
 
@@ -465,15 +474,29 @@
         function applyFilters() {
             const district = document.getElementById('districtFilter').value;
             const school = document.getElementById('schoolFilter').value;
+            const result = document.getElementById('resultFilter').value;
+            const subject = document.getElementById('subjectFilter').value;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const comparisonValue = COMPARISON_LEVELS[levelKey][subject];
 
             filteredData = allData.filter(d => {
                 const matchDistrict = !district || d['อำเภอที่ตั้งรร.'] === district;
                 const matchSchool = !school || d['ชื่อโรงเรียน'] === school;
-                return matchDistrict && matchSchool;
+                
+                let matchResult = true;
+                if (result) {
+                    const score = d['normalizedAvg'];
+                    const epsilon = 0.001;
+                    if (result === 'above') matchResult = score > (comparisonValue + epsilon);
+                    else if (result === 'equal') matchResult = Math.abs(score - comparisonValue) <= epsilon;
+                    else if (result === 'below') matchResult = score < (comparisonValue - epsilon);
+                }
+
+                return matchDistrict && matchSchool && matchResult;
             });
 
             // Reset to page 1 when filters change
-            if (event && (event.target.id === 'districtFilter' || event.target.id === 'schoolFilter')) {
+            if (event && (event.target.id === 'districtFilter' || event.target.id === 'schoolFilter' || event.target.id === 'resultFilter' || event.target.id === 'comparisonLevel')) {
                 currentPage = 1;
             }
 
@@ -490,6 +513,7 @@
         function resetFilters() {
             document.getElementById('districtFilter').value = '';
             document.getElementById('schoolFilter').value = '';
+            document.getElementById('resultFilter').value = '';
             updateSchoolFilter();
             applyFilters();
         }
