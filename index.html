@@ -208,8 +208,19 @@
         const XLSX_URL = 'https://docs.google.com/spreadsheets/d/1hKGYH1uB-S9XFSB_Y50-Eksyf57Du0XBJP7iEhoxkkw/export?format=xlsx';
 
         async function init() {
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'loading-overlay';
+            loadingOverlay.className = 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center';
+            loadingOverlay.innerHTML = `
+                <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-slate-600 font-medium">กำลังโหลดข้อมูลจาก Google Sheets...</p>
+            `;
+            document.body.appendChild(loadingOverlay);
+
             try {
                 const response = await fetch(XLSX_URL);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
                 const buffer = await response.arrayBuffer();
                 const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
                 
@@ -221,14 +232,22 @@
                     'ภาษาอังกฤษ': 'eng'
                 };
 
+                console.log('Sheet names found:', workbook.SheetNames);
+
                 workbook.SheetNames.forEach(sheetName => {
-                    const id = sheetMapping[sheetName];
+                    const trimmedName = sheetName.trim();
+                    const id = sheetMapping[trimmedName];
                     if (id) {
                         const worksheet = workbook.Sheets[sheetName];
                         const jsonData = XLSX.utils.sheet_to_json(worksheet);
                         newData[id] = jsonData;
+                        console.log(`Loaded ${jsonData.length} records for ${trimmedName}`);
                     }
                 });
+
+                if (Object.keys(newData).length === 0) {
+                    throw new Error('ไม่พบข้อมูลใน Sheet ที่กำหนด (ภาษาไทย, คณิตศาสตร์, วิทยาศาสตร์, ภาษาอังกฤษ)');
+                }
 
                 rawData = newData;
                 
@@ -236,7 +255,10 @@
                 changeSubject();
             } catch (error) {
                 console.error('Failed to load data from Google Sheets', error);
-                alert('ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+                alert('เกิดข้อผิดพลาด: ' + error.message + '\n\nกรุณาตรวจสอบว่า:\n1. อินเทอร์เน็ตเชื่อมต่ออยู่\n2. Google Sheets ตั้งค่าแชร์เป็น "ทุกคนที่มีลิงก์อ่านได้"\n3. ชื่อ Sheet ตรงกับที่กำหนด (ภาษาไทย, คณิตศาสตร์, วิทยาศาสตร์, ภาษาอังกฤษ)');
+            } finally {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) overlay.remove();
             }
         }
 
