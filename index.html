@@ -22,7 +22,12 @@
         <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">ผลการทดสอบระดับชาติ (ONET) ปีการศึกษา 2568 </h1>
-                <p class="text-slate-500">(ชั้นประถมศึกษาปีที่ 6)</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <select id="gradeLevel" class="bg-white border border-slate-200 rounded-lg px-3 py-1 text-slate-700 font-medium text-sm" onchange="changeGradeLevel()">
+                        <option value="p6">ชั้นประถมศึกษาปีที่ 6 (ป.6)</option>
+                        <option value="m3">ชั้นมัธยมศึกษาปีที่ 3 (ม.3)</option>
+                    </select>
+                </div>
             </div>
             <div class="flex gap-2">
                 <button onclick="refreshData()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">รีเฟรชข้อมูล</button>
@@ -237,20 +242,40 @@
         let currentPage = 1;
         let pageSize = 25;
 
-        const XLSX_URL = 'https://docs.google.com/spreadsheets/d/1hKGYH1uB-S9XFSB_Y50-Eksyf57Du0XBJP7iEhoxkkw/export?format=xlsx';
+        const GRADE_CONFIGS = {
+            p6: {
+                name: 'ชั้นประถมศึกษาปีที่ 6 (ป.6)',
+                url: 'https://docs.google.com/spreadsheets/d/1hKGYH1uB-S9XFSB_Y50-Eksyf57Du0XBJP7iEhoxkkw/export?format=xlsx'
+            },
+            m3: {
+                name: 'ชั้นมัธยมศึกษาปีที่ 3 (ม.3)',
+                url: 'https://docs.google.com/spreadsheets/d/1ElqVZMu_lt3HMtqw1j01FsTHIp0OKFT9bZC1xuPJzQo/export?format=xlsx'
+            }
+        };
+
+        async function changeGradeLevel() {
+            init();
+        }
+
+        async function refreshData() {
+            init();
+        }
 
         async function init() {
+            const gradeKey = document.getElementById('gradeLevel').value;
+            const config = GRADE_CONFIGS[gradeKey];
+            
             const loadingOverlay = document.createElement('div');
             loadingOverlay.id = 'loading-overlay';
             loadingOverlay.className = 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center';
             loadingOverlay.innerHTML = `
                 <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p class="text-slate-600 font-medium">กำลังโหลดข้อมูลจาก Google Sheets...</p>
+                <p class="text-slate-600 font-medium">กำลังโหลดข้อมูล ${config.name}...</p>
             `;
             document.body.appendChild(loadingOverlay);
 
             try {
-                const response = await fetch(XLSX_URL);
+                const response = await fetch(config.url);
                 if (!response.ok) throw new Error('Network response was not ok');
                 
                 const buffer = await response.arrayBuffer();
@@ -274,7 +299,25 @@
                         const worksheet = workbook.Sheets[sheetName];
                         const jsonData = XLSX.utils.sheet_to_json(worksheet);
                         newData[id] = jsonData;
-                        console.log(`Loaded ${jsonData.length} records for ${trimmedName}`);
+                    }
+
+                    // Look for comparison data sheet
+                    if (trimmedName.includes('วิเคราะห์ผล')) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        // Update comparison levels from sheet
+                        jsonData.forEach(row => {
+                            const subject = row['วิชา'];
+                            const subKey = Object.keys(sheetMapping).find(k => subject.includes(k));
+                            if (subKey) {
+                                const id = sheetMapping[subKey];
+                                COMPARISON_LEVELS.national[id] = parseFloat(row['คะแนนเฉลี่ย (ประเทศ)']) || 0;
+                                COMPARISON_LEVELS.ministry[id] = parseFloat(row['คะแนนเฉลี่ย (สพฐ.)']) || 0;
+                                // We'll calculate district from school data for more accuracy, 
+                                // but we can use this as fallback if needed
+                            }
+                        });
                     }
                 });
 
@@ -291,7 +334,7 @@
                 changeSubject();
             } catch (error) {
                 console.error('Failed to load data from Google Sheets', error);
-                alert('เกิดข้อผิดพลาด: ' + error.message + '\n\nกรุณาตรวจสอบว่า:\n1. อินเทอร์เน็ตเชื่อมต่ออยู่\n2. Google Sheets ตั้งค่าแชร์เป็น "ทุกคนที่มีลิงก์อ่านได้"\n3. ชื่อ Sheet ตรงกับที่กำหนด (ภาษาไทย, คณิตศาสตร์, วิทยาศาสตร์, ภาษาอังกฤษ)');
+                alert('เกิดข้อผิดพลาด: ' + error.message);
             } finally {
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) overlay.remove();
