@@ -2,7 +2,7 @@
 import fetch from 'node-fetch';
 import XLSX from 'xlsx';
 
-const url = 'https://docs.google.com/spreadsheets/d/1hKGYH1uB-S9XFSB_Y50-Eksyf57Du0XBJP7iEhoxkkw/export?format=xlsx';
+const url = 'https://docs.google.com/spreadsheets/d/1UX2_V-b97i9MRh5rGTnqfe2c-nFntCjno4KRwlSKg1Q/export?format=xlsx';
 
 async function checkSheet() {
     try {
@@ -13,11 +13,9 @@ async function checkSheet() {
         console.log('Sheet Names:', workbook.SheetNames);
         workbook.SheetNames.forEach(name => {
             const sheet = workbook.Sheets[name];
-            const data = XLSX.utils.sheet_to_json(sheet);
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // Use array of arrays to see everything
             console.log(`Sheet: ${name}, Rows: ${data.length}`);
-            if (name.includes('วิเคราะห์ผล')) {
-                console.log('Data:', JSON.stringify(data, null, 2));
-            }
+            console.log('First 10 rows:', JSON.stringify(data.slice(0, 10), null, 2));
         });
     } catch (error) {
         console.error('Error:', error.message);
