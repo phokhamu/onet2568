@@ -2,7 +2,7 @@
 import fetch from 'node-fetch';
 import XLSX from 'xlsx';
 
-const url = 'https://docs.google.com/spreadsheets/d/1UX2_V-b97i9MRh5rGTnqfe2c-nFntCjno4KRwlSKg1Q/export?format=xlsx';
+const url = 'https://docs.google.com/spreadsheets/d/1cu-0G2xAmXqCTfenXbge0QTGJKJbp7Ne6hGkIk7puNE/export?format=xlsx';
 
 async function checkSheet() {
     try {
@@ -13,7 +13,7 @@ async function checkSheet() {
         console.log('Sheet Names:', workbook.SheetNames);
         workbook.SheetNames.forEach(name => {
             const sheet = workbook.Sheets[name];
-            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // Use array of arrays to see everything
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
             console.log(`Sheet: ${name}, Rows: ${data.length}`);
             console.log('First 10 rows:', JSON.stringify(data.slice(0, 10), null, 2));
         });

@@ -26,6 +26,7 @@
                     <select id="gradeLevel" class="bg-white border border-slate-200 rounded-lg px-3 py-1 text-slate-700 font-medium text-sm" onchange="changeGradeLevel()">
                         <option value="p6">ชั้นประถมศึกษาปีที่ 6 (ป.6) - ONET</option>
                         <option value="m3">ชั้นมัธยมศึกษาปีที่ 3 (ม.3) - ONET</option>
+                        <option value="p3_nt">ชั้นประถมศึกษาปีที่ 3 (ป.3) - NT</option>
                         <option value="p1_rt">ชั้นประถมศึกษาปีที่ 1 (ป.1) - RT</option>
                     </select>
                 </div>
@@ -105,7 +106,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="card mb-8 grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div class="card mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">วิชา</label>
                 <select id="subjectFilter" class="filter-select" onchange="changeSubject()">
@@ -119,6 +120,12 @@
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">อำเภอ</label>
                 <select id="districtFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">ขนาดโรงเรียน</label>
+                <select id="sizeFilter" class="filter-select" onchange="applyFilters()">
                     <option value="">ทั้งหมด</option>
                 </select>
             </div>
@@ -259,6 +266,11 @@
                 name: 'ชั้นประถมศึกษาปีที่ 1 (ป.1) - RT',
                 type: 'rt',
                 url: 'https://docs.google.com/spreadsheets/d/1UX2_V-b97i9MRh5rGTnqfe2c-nFntCjno4KRwlSKg1Q/export?format=xlsx'
+            },
+            p3_nt: {
+                name: 'ชั้นประถมศึกษาปีที่ 3 (ป.3) - NT',
+                type: 'nt',
+                url: 'https://docs.google.com/spreadsheets/d/1cu-0G2xAmXqCTfenXbge0QTGJKJbp7Ne6hGkIk7puNE/export?format=xlsx'
             }
         };
 
@@ -274,6 +286,12 @@
             const gradeKey = document.getElementById('gradeLevel').value;
             const config = GRADE_CONFIGS[gradeKey];
             
+            // Reset filters when grade level changes
+            document.getElementById('districtFilter').value = '';
+            document.getElementById('sizeFilter').value = '';
+            document.getElementById('schoolFilter').value = '';
+            document.getElementById('resultFilter').value = '';
+            
             // Update subject filter options based on test type
             const subjectFilter = document.getElementById('subjectFilter');
             const currentSubject = subjectFilter.value;
@@ -284,6 +302,12 @@
                     <option value="all">รวมทุกด้าน</option>
                     <option value="reading_aloud">การอ่านออกเสียง</option>
                     <option value="reading_comprehension">การอ่านรู้เรื่อง</option>
+                `;
+            } else if (config.type === 'nt') {
+                subjectFilter.innerHTML = `
+                    <option value="all">รวมทุกด้าน</option>
+                    <option value="math">ด้านคณิตศาสตร์</option>
+                    <option value="thai">ด้านภาษาไทย</option>
                 `;
             } else {
                 subjectFilter.innerHTML = `
@@ -361,6 +385,37 @@
                     // But wait, the ONET logic uses student counts.
                     // Let's assume 1 student per school for RT if not specified, 
                     // or try to find it. The sheet doesn't seem to have it per school.
+                } else if (config.type === 'nt') {
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // NT Data starts from row 4 (index 3)
+                    // Columns: 1:รหัสโรงเรียน, 2:ชื่อโรงเรียน, 3:อำเภอ, 4:ขนาด, 5:คะแนนคณิต, 6:ร้อยละคณิต, 7:คะแนนไทย, 8:ร้อยละไทย, 9:คะแนนรวม, 10:ร้อยละรวม
+                    const ntData = jsonData.slice(3).filter(row => row[1]); 
+                    
+                    newData['math'] = ntData.map(row => ({
+                        'รหัสโรงเรียน': row[1],
+                        'ชื่อโรงเรียน': row[2],
+                        'อำเภอที่ตั้งรร.': row[3],
+                        'ขนาดโรงเรียน': row[4],
+                        'คะแนนเฉลี่ย': parseFloat(row[6]) || 0,
+                        'คะแนนสูงสุด': 100,
+                        'คะแนนต่ำสุด': 0,
+                        'จำนวนผู้เข้าสอบ': 1
+                    }));
+                    
+                    newData['thai'] = ntData.map(row => ({
+                        'รหัสโรงเรียน': row[1],
+                        'ชื่อโรงเรียน': row[2],
+                        'อำเภอที่ตั้งรร.': row[3],
+                        'ขนาดโรงเรียน': row[4],
+                        'คะแนนเฉลี่ย': parseFloat(row[8]) || 0,
+                        'คะแนนสูงสุด': 100,
+                        'คะแนนต่ำสุด': 0,
+                        'จำนวนผู้เข้าสอบ': 1
+                    }));
+                    totalRTStudents = 0; // Reset for NT
                 } else {
                     const sheetMapping = {
                         'ภาษาไทย': 'thai',
@@ -424,7 +479,14 @@
         function calculateDistrictAverages() {
             const gradeKey = document.getElementById('gradeLevel').value;
             const config = GRADE_CONFIGS[gradeKey];
-            const subjects = config.type === 'rt' ? ['reading_aloud', 'reading_comprehension'] : ['thai', 'math', 'sci', 'eng'];
+            let subjects;
+            if (config.type === 'rt') {
+                subjects = ['reading_aloud', 'reading_comprehension'];
+            } else if (config.type === 'nt') {
+                subjects = ['math', 'thai'];
+            } else {
+                subjects = ['thai', 'math', 'sci', 'eng'];
+            }
             let totalDistrictAll = 0;
             let subjectsWithData = 0;
 
@@ -464,9 +526,9 @@
                     COMPARISON_LEVELS[level].all = avg;
                 });
             } else {
-                // For RT, we don't have national/ministry in the same format yet
+                // For RT and NT, we don't have national/ministry in the same format yet
                 ['national', 'ministry'].forEach(level => {
-                    COMPARISON_LEVELS[level] = { name: COMPARISON_LEVELS[level].name, reading_aloud: 0, reading_comprehension: 0, all: 0 };
+                    COMPARISON_LEVELS[level] = { name: COMPARISON_LEVELS[level].name, reading_aloud: 0, reading_comprehension: 0, math: 0, thai: 0, all: 0 };
                 });
             }
         }
@@ -476,7 +538,14 @@
             const gradeKey = document.getElementById('gradeLevel').value;
             const config = GRADE_CONFIGS[gradeKey];
             const levels = ['national', 'ministry', 'district'];
-            const subjects = config.type === 'rt' ? ['reading_aloud', 'reading_comprehension', 'all'] : ['thai', 'math', 'sci', 'eng', 'all'];
+            let subjects;
+            if (config.type === 'rt') {
+                subjects = ['reading_aloud', 'reading_comprehension', 'all'];
+            } else if (config.type === 'nt') {
+                subjects = ['math', 'thai', 'all'];
+            } else {
+                subjects = ['thai', 'math', 'sci', 'eng', 'all'];
+            }
 
             levels.forEach(level => {
                 subjects.forEach(sub => {
@@ -513,6 +582,7 @@
                                 'รหัสโรงเรียน': schoolId,
                                 'ชื่อโรงเรียน': d['ชื่อโรงเรียน'],
                                 'อำเภอที่ตั้งรร.': d['อำเภอที่ตั้งรร.'],
+                                'ขนาดโรงเรียน': d['ขนาดโรงเรียน'],
                                 'จำนวนผู้เข้าสอบ': parseInt(d['จำนวนผู้เข้าสอบ']) || 0,
                                 'subjectCount': 0,
                                 'totalAvg': 0,
@@ -589,13 +659,24 @@
                 districtSelect.appendChild(opt);
             });
 
+            const sizes = [...new Set(allData.map(d => d['ขนาดโรงเรียน']))].filter(Boolean).sort();
+            const sizeSelect = document.getElementById('sizeFilter');
+            sizeSelect.innerHTML = '<option value="">ทั้งหมด</option>';
+            sizes.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                sizeSelect.appendChild(opt);
+            });
+
             updateSchoolFilter();
         }
 
         function updateSchoolFilter() {
             const district = document.getElementById('districtFilter').value;
+            const size = document.getElementById('sizeFilter').value;
             const schools = [...new Set(allData
-                .filter(d => !district || d['อำเภอที่ตั้งรร.'] === district)
+                .filter(d => (!district || d['อำเภอที่ตั้งรร.'] === district) && (!size || d['ขนาดโรงเรียน'] === size))
                 .map(d => d['ชื่อโรงเรียน'])
             )].sort();
 
@@ -613,6 +694,7 @@
 
         function applyFilters() {
             const district = document.getElementById('districtFilter').value;
+            const size = document.getElementById('sizeFilter').value;
             const school = document.getElementById('schoolFilter').value;
             const result = document.getElementById('resultFilter').value;
             const subject = document.getElementById('subjectFilter').value;
@@ -621,6 +703,7 @@
 
             filteredData = allData.filter(d => {
                 const matchDistrict = !district || d['อำเภอที่ตั้งรร.'] === district;
+                const matchSize = !size || d['ขนาดโรงเรียน'] === size;
                 const matchSchool = !school || d['ชื่อโรงเรียน'] === school;
                 
                 let matchResult = true;
@@ -632,12 +715,17 @@
                     else if (result === 'below') matchResult = score < (comparisonValue - epsilon);
                 }
 
-                return matchDistrict && matchSchool && matchResult;
+                return matchDistrict && matchSize && matchSchool && matchResult;
             });
 
             // Reset to page 1 when filters change
-            if (event && (event.target.id === 'districtFilter' || event.target.id === 'schoolFilter' || event.target.id === 'resultFilter' || event.target.id === 'comparisonLevel')) {
+            if (event && (event.target.id === 'districtFilter' || event.target.id === 'sizeFilter' || event.target.id === 'schoolFilter' || event.target.id === 'resultFilter' || event.target.id === 'comparisonLevel')) {
                 currentPage = 1;
+            }
+
+            // If district or size changed but school didn't, update school list
+            if (event && (event.target.id === 'districtFilter' || event.target.id === 'sizeFilter')) {
+                updateSchoolFilter();
             }
 
             updateOverview();
@@ -652,6 +740,7 @@
 
         function resetFilters() {
             document.getElementById('districtFilter').value = '';
+            document.getElementById('sizeFilter').value = '';
             document.getElementById('schoolFilter').value = '';
             document.getElementById('resultFilter').value = '';
             updateSchoolFilter();
@@ -681,8 +770,8 @@
 
             // Update Comparison Cards
             const levels = ['national', 'ministry', 'district'];
-            const subjectKeys = config.type === 'rt' 
-                ? { 'reading_aloud': 'การอ่านออกเสียง', 'reading_comprehension': 'การอ่านรู้เรื่อง' }
+            const subjectKeys = (config.type === 'rt' || config.type === 'nt')
+                ? (config.type === 'rt' ? { 'reading_aloud': 'การอ่านออกเสียง', 'reading_comprehension': 'การอ่านรู้เรื่อง' } : { 'math': 'คณิตศาสตร์', 'thai': 'ภาษาไทย' })
                 : { 'thai': 'ภาษาไทย', 'math': 'คณิตศาสตร์', 'sci': 'วิทยาศาสตร์', 'eng': 'ภาษาอังกฤษ' };
 
             levels.forEach(level => {
@@ -726,6 +815,9 @@
             if (config.type === 'rt') {
                 subjectKeys = ['reading_aloud', 'reading_comprehension'];
                 subjectLabels = ['การอ่านออกเสียง', 'การอ่านรู้เรื่อง'];
+            } else if (config.type === 'nt') {
+                subjectKeys = ['math', 'thai'];
+                subjectLabels = ['ด้านคณิตศาสตร์', 'ด้านภาษาไทย'];
             } else {
                 subjectKeys = ['thai', 'math', 'sci', 'eng'];
                 subjectLabels = ['ภาษาไทย', 'คณิตศาสตร์', 'วิทยาศาสตร์', 'ภาษาอังกฤษ'];
@@ -736,7 +828,7 @@
             filteredData.forEach(d => {
                 const dist = d['อำเภอที่ตั้งรร.'];
                 if (!districtData[dist]) districtData[dist] = { sum: 0, count: 0 };
-                const students = d['จำนวนผู้เข้าสอบ'] || 1; // Fallback to 1 for RT if needed
+                const students = d['จำนวนผู้เข้าสอบ'] || 1; 
                 districtData[dist].sum += d['normalizedAvg'] * students;
                 districtData[dist].count += students;
             });
@@ -786,7 +878,7 @@
                     scales: { 
                         y: { 
                             beginAtZero: true, 
-                            max: config.type === 'rt' ? 100 : 60,
+                            max: (config.type === 'rt' || config.type === 'nt') ? 100 : 60,
                             title: { display: true, text: 'คะแนนเฉลี่ย' }
                         } 
                     }
@@ -837,12 +929,67 @@
                     scales: { 
                         y: { 
                             beginAtZero: true, 
-                            max: config.type === 'rt' ? 100 : 60,
+                            max: (config.type === 'rt' || config.type === 'nt') ? 100 : 60,
                             title: { display: true, text: 'คะแนนเฉลี่ย' }
                         } 
                     }
                 }
             });
+
+            // School Size Comparison Chart
+            const sizeData = {
+                'เล็ก': { sum: 0, count: 0 },
+                'กลาง': { sum: 0, count: 0 },
+                'ใหญ่': { sum: 0, count: 0 },
+                'ใหญ่พิเศษ': { sum: 0, count: 0 }
+            };
+
+            filteredData.forEach(d => {
+                const size = d['ขนาดโรงเรียน']?.trim();
+                if (size && sizeData[size]) {
+                    const students = d['จำนวนผู้เข้าสอบ'] || 1;
+                    sizeData[size].sum += d['normalizedAvg'] * students;
+                    sizeData[size].count += students;
+                }
+            });
+
+            const sizeLabels = Object.keys(sizeData).filter(s => sizeData[s].count > 0);
+            const sizeValues = sizeLabels.map(s => sizeData[s].sum / sizeData[s].count);
+
+            if (window.sizeChart) window.sizeChart.destroy();
+            const sizeCtx = document.getElementById('sizeChart');
+            if (sizeCtx) {
+                window.sizeChart = new Chart(sizeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: sizeLabels,
+                        datasets: [{
+                            label: 'คะแนนเฉลี่ยตามขนาดโรงเรียน',
+                            data: sizeValues,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.8)',
+                                'rgba(54, 162, 235, 0.8)',
+                                'rgba(255, 206, 86, 0.8)',
+                                'rgba(75, 192, 192, 0.8)'
+                            ],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'เปรียบเทียบตามขนาดโรงเรียน' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: (config.type === 'rt' || config.type === 'nt') ? 100 : 60
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         function updateTable() {
@@ -857,14 +1004,16 @@
             
             // Update Header
             if (subject === 'all') {
-                if (config.type === 'rt') {
+                if (config.type === 'rt' || config.type === 'nt') {
+                    const col1 = config.type === 'rt' ? 'อ่านออกเสียง' : 'คณิตศาสตร์';
+                    const col2 = config.type === 'rt' ? 'อ่านรู้เรื่อง' : 'ภาษาไทย';
                     thead.innerHTML = `
                         <tr class="bg-slate-50 border-b border-slate-200">
                             <th class="p-4 font-semibold text-slate-700">รหัสโรงเรียน</th>
                             <th class="p-4 font-semibold text-slate-700">โรงเรียน</th>
                             <th class="p-4 font-semibold text-slate-700">อำเภอ</th>
-                            <th class="p-4 font-semibold text-slate-700 text-center">อ่านออกเสียง</th>
-                            <th class="p-4 font-semibold text-slate-700 text-center">อ่านรู้เรื่อง</th>
+                            <th class="p-4 font-semibold text-slate-700 text-center">${col1}</th>
+                            <th class="p-4 font-semibold text-slate-700 text-center">${col2}</th>
                             <th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ยรวม</th>
                             <th class="p-4 font-semibold text-slate-700 text-center">เทียบ${levelName}</th>
                         </tr>
@@ -924,13 +1073,15 @@
                     : `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold">${diff.toFixed(2)}</span>`;
 
                 if (subject === 'all') {
-                    if (config.type === 'rt') {
+                    if (config.type === 'rt' || config.type === 'nt') {
+                        const val1 = config.type === 'rt' ? d['reading_aloudAvg'] : d['mathAvg'];
+                        const val2 = config.type === 'rt' ? d['reading_comprehensionAvg'] : d['thaiAvg'];
                         tr.innerHTML = `
                             <td class="p-4 text-slate-500 text-sm font-mono">${d['รหัสโรงเรียน']}</td>
                             <td class="p-4 text-slate-800 font-medium">${d['ชื่อโรงเรียน']}</td>
                             <td class="p-4 text-slate-600">${d['อำเภอที่ตั้งรร.']}</td>
-                            <td class="p-4 text-center text-slate-600">${d['reading_aloudAvg'].toFixed(2)}</td>
-                            <td class="p-4 text-center text-slate-600">${d['reading_comprehensionAvg'].toFixed(2)}</td>
+                            <td class="p-4 text-center text-slate-600">${val1.toFixed(2)}</td>
+                            <td class="p-4 text-center text-slate-600">${val2.toFixed(2)}</td>
                             <td class="p-4 text-center font-bold text-indigo-600">${d['normalizedAvg'].toFixed(2)}</td>
                             <td class="p-4 text-center">${summaryHtml}</td>
                         `;
@@ -1020,13 +1171,18 @@
             let exportData = [];
             
             if (subject === 'all') {
-                if (config.type === 'rt') {
+                if (config.type === 'rt' || config.type === 'nt') {
+                    const col1 = config.type === 'rt' ? 'คะแนนเฉลี่ยการอ่านออกเสียง' : 'คะแนนเฉลี่ยคณิตศาสตร์';
+                    const col2 = config.type === 'rt' ? 'คะแนนเฉลี่ยการอ่านรู้เรื่อง' : 'คะแนนเฉลี่ยภาษาไทย';
+                    const val1 = config.type === 'rt' ? d => d['reading_aloudAvg'] : d => d['mathAvg'];
+                    const val2 = config.type === 'rt' ? d => d['reading_comprehensionAvg'] : d => d['thaiAvg'];
+                    
                     exportData = sorted.map(d => ({
                         'รหัสโรงเรียน': d['รหัสโรงเรียน'],
                         'โรงเรียน': d['ชื่อโรงเรียน'],
                         'อำเภอ': d['อำเภอที่ตั้งรร.'],
-                        'คะแนนเฉลี่ยการอ่านออกเสียง': d['reading_aloudAvg'].toFixed(2),
-                        'คะแนนเฉลี่ยการอ่านรู้เรื่อง': d['reading_comprehensionAvg'].toFixed(2),
+                        [col1]: val1(d).toFixed(2),
+                        [col2]: val2(d).toFixed(2),
                         'คะแนนเฉลี่ยรวม': d['normalizedAvg'].toFixed(2),
                         [`ส่วนต่าง${levelName}`]: (d['normalizedAvg'] - compareAvg).toFixed(2),
                         'สรุป': (d['normalizedAvg'] - compareAvg) >= 0 ? `สูงกว่าค่าเฉลี่ย${levelName}` : `ต่ำกว่าค่าเฉลี่ย${levelName}`
@@ -1051,7 +1207,7 @@
                     'รหัสโรงเรียน': d['รหัสโรงเรียน'],
                     'โรงเรียน': d['ชื่อโรงเรียน'],
                     'อำเภอ': d['อำเภอที่ตั้งรร.'],
-                    [config.type === 'rt' ? 'ขนาดโรงเรียน' : 'จำนวนผู้เข้าสอบ']: config.type === 'rt' ? d['ขนาดโรงเรียน'] : d['จำนวนผู้เข้าสอบ'],
+                    [config.type === 'rt' || config.type === 'nt' ? 'ขนาดโรงเรียน' : 'จำนวนผู้เข้าสอบ']: config.type === 'rt' || config.type === 'nt' ? d['ขนาดโรงเรียน'] : d['จำนวนผู้เข้าสอบ'],
                     'คะแนนสูงสุด': d['normalizedMax'].toFixed(2),
                     'คะแนนต่ำสุด': d['normalizedMin'].toFixed(2),
                     'คะแนนเฉลี่ย': d['normalizedAvg'].toFixed(2),
