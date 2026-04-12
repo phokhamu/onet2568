@@ -329,6 +329,23 @@
     </div>
 
     <script>
+        // Global Error Handling for Production Diagnosis
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('Global Error:', message, 'at', source, ':', lineno);
+            // Only alert in production or if explicitly needed
+            if (window.location.hostname !== 'localhost') {
+                alert('เกิดข้อผิดพลาดของระบบ: ' + message + '\nที่: ' + source + ':' + lineno);
+            }
+            return false;
+        };
+
+        window.onunhandledrejection = function(event) {
+            console.error('Unhandled Rejection:', event.reason);
+            if (window.location.hostname !== 'localhost') {
+                alert('เกิดข้อผิดพลาด (Promise): ' + (event.reason?.message || event.reason));
+            }
+        };
+
         let currentReport = 'overview';
         let rawData = {};
         let allData = [];
@@ -443,22 +460,28 @@
         }
 
         async function initOverview() {
+            if (document.getElementById('loading-overlay')) return; // Prevent multiple overlays
+            
             const loadingOverlay = document.createElement('div');
             loadingOverlay.id = 'loading-overlay';
             loadingOverlay.className = 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center';
             loadingOverlay.innerHTML = `
                 <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p class="text-slate-600 font-medium">กำลังประมวลผลภาพรวม...</p>
+                <p id="loading-status" class="text-xs text-slate-400 mt-2">กำลังดึงข้อมูลจากเซิร์ฟเวอร์...</p>
             `;
             document.body.appendChild(loadingOverlay);
 
             try {
+                console.log('Starting Overview Data Fetch...');
+                const statusEl = document.getElementById('loading-status');
+                
                 // Fetch all reports for overview
                 const results = await Promise.all([
-                    fetchReportData('onet', CONFIGS.onet.grades.p6.url),
-                    fetchReportData('onet', CONFIGS.onet.grades.m3.url),
-                    fetchReportData('nt', CONFIGS.nt.url),
-                    fetchReportData('rt', CONFIGS.rt.url)
+                    fetchReportData('onet', CONFIGS.onet.grades.p6.url).then(r => { if(statusEl) statusEl.textContent = 'โหลด O-NET ป.6 สำเร็จ...'; return r; }),
+                    fetchReportData('onet', CONFIGS.onet.grades.m3.url).then(r => { if(statusEl) statusEl.textContent = 'โหลด O-NET ม.3 สำเร็จ...'; return r; }),
+                    fetchReportData('nt', CONFIGS.nt.url).then(r => { if(statusEl) statusEl.textContent = 'โหลด NT สำเร็จ...'; return r; }),
+                    fetchReportData('rt', CONFIGS.rt.url).then(r => { if(statusEl) statusEl.textContent = 'โหลด RT สำเร็จ...'; return r; })
                 ]);
 
                 OVERVIEW_DATA.onet_p6 = results[0];
@@ -466,11 +489,14 @@
                 OVERVIEW_DATA.nt = results[2];
                 OVERVIEW_DATA.rt = results[3];
 
+                console.log('Overview Data Loaded:', OVERVIEW_DATA);
                 updateOverviewDashboard();
             } catch (error) {
                 console.error('Overview initialization failed:', error);
+                alert('ไม่สามารถโหลดข้อมูลภาพรวมได้: ' + error.message);
             } finally {
-                if (document.getElementById('loading-overlay')) document.getElementById('loading-overlay').remove();
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) overlay.remove();
             }
         }
 
@@ -478,7 +504,15 @@
             try {
                 const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+                
                 const buffer = await response.arrayBuffer();
+                if (buffer.byteLength === 0) throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
+                
                 const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
                 
                 let districtAvg = 0;
@@ -593,11 +627,18 @@
             document.body.appendChild(loadingOverlay);
 
             try {
+                console.log(`Fetching data from: ${url}`);
                 const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
                 
                 const buffer = await response.arrayBuffer();
+                if (buffer.byteLength === 0) throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
+                
                 const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
                 
                 const newData = {};
