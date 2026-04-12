@@ -227,8 +227,10 @@
         }
 
         async function init() {
+            console.log('Initializing O-NET report...');
             const gradeKey = document.getElementById('gradeLevel').value;
             const config = GRADE_CONFIGS[gradeKey];
+            console.log(`Selected grade: ${gradeKey}, config:`, config);
             
             const loadingOverlay = document.createElement('div');
             loadingOverlay.id = 'loading-overlay';
@@ -240,12 +242,17 @@
             document.body.appendChild(loadingOverlay);
 
             try {
-                const response = await fetch(config.url);
-                if (!response.ok) throw new Error('Network response was not ok');
+                const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(config.url)}`;
+                console.log(`Fetching data via proxy: ${proxyUrl}`);
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
                 
+                console.log('Data fetched successfully, reading buffer...');
                 const buffer = await response.arrayBuffer();
+                console.log(`Buffer received: ${buffer.byteLength} bytes. Parsing with XLSX...`);
                 const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
                 
+                console.log('Workbook parsed. Sheet names:', workbook.SheetNames);
                 const newData = {};
                 const sheetMapping = {
                     'ภาษาไทย': 'thai',
@@ -260,8 +267,10 @@
                     if (id) {
                         const worksheet = workbook.Sheets[sheetName];
                         newData[id] = XLSX.utils.sheet_to_json(worksheet);
+                        console.log(`Parsed ${newData[id].length} rows for ${trimmedName}`);
                     }
                     if (trimmedName.includes('วิเคราะห์ผล')) {
+                        console.log('Found comparison sheet, parsing...');
                         const worksheet = workbook.Sheets[sheetName];
                         const jsonData = XLSX.utils.sheet_to_json(worksheet);
                         jsonData.forEach(row => {
@@ -277,13 +286,16 @@
                 });
 
                 rawData = newData;
+                console.log('Calculating averages and updating UI...');
                 calculateDistrictAverages();
                 updateComparisonCards();
                 changeSubject();
+                console.log('O-NET initialization complete.');
             } catch (error) {
-                console.error('Failed to load data', error);
-                alert('เกิดข้อผิดพลาด: ' + error.message);
+                console.error('Failed to load O-NET data:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
             } finally {
+                console.log('Removing loading overlay...');
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) overlay.remove();
             }
@@ -675,7 +687,10 @@
             XLSX.writeFile(wb, `ONET_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
-        init();
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing O-NET...');
+            init();
+        });
     </script>
 </body>
 </html>

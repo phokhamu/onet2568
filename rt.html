@@ -199,6 +199,7 @@
         const RT_URL = 'https://docs.google.com/spreadsheets/d/1UX2_V-b97i9MRh5rGTnqfe2c-nFntCjno4KRwlSKg1Q/export?format=xlsx';
 
         async function init() {
+            console.log('Initializing RT report...');
             const loadingOverlay = document.createElement('div');
             loadingOverlay.id = 'loading-overlay';
             loadingOverlay.className = 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center';
@@ -209,19 +210,28 @@
             document.body.appendChild(loadingOverlay);
 
             try {
-                const response = await fetch(RT_URL);
-                if (!response.ok) throw new Error('Network response was not ok');
+                const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(RT_URL)}`;
+                console.log(`Fetching RT data via proxy: ${proxyUrl}`);
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
                 
+                console.log('RT data fetched successfully, reading buffer...');
                 const buffer = await response.arrayBuffer();
+                console.log(`Buffer received: ${buffer.byteLength} bytes. Parsing with XLSX...`);
                 const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
                 
+                console.log('Workbook parsed. Sheet names:', workbook.SheetNames);
                 const newData = {};
                 const sheetName = 'คะแนน RT';
                 const worksheet = workbook.Sheets[sheetName];
+                if (!worksheet) throw new Error(`Sheet "${sheetName}" not found in workbook`);
+                
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                console.log(`Parsed ${jsonData.length} rows from sheet.`);
                 
                 // RT Data starts from row 8 (index 7)
                 const rtData = jsonData.slice(7).filter(row => row[1]); 
+                console.log(`Found ${rtData.length} valid data rows.`);
                 
                 newData['reading_aloud'] = rtData.map(row => ({
                     'รหัสโรงเรียน': row[1],
@@ -246,13 +256,16 @@
                 }));
 
                 rawData = newData;
+                console.log('Calculating averages and updating UI...');
                 calculateDistrictAverages();
                 updateComparisonCards();
                 changeSubject();
+                console.log('RT initialization complete.');
             } catch (error) {
-                console.error('Failed to load data', error);
-                alert('เกิดข้อผิดพลาด: ' + error.message);
+                console.error('Failed to load RT data:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล RT: ' + error.message);
             } finally {
+                console.log('Removing loading overlay...');
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) overlay.remove();
             }
@@ -624,7 +637,10 @@
             init();
         }
 
-        init();
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing RT...');
+            init();
+        });
     </script>
 </body>
 </html>
