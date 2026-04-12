@@ -58,7 +58,7 @@ async function startServer() {
   // Refresh data endpoint
   app.get('/api/refresh', async (req, res) => {
     await fetchData();
-    res.json({ status: 'ok', count: onetData.length });
+    res.json({ status: 'ok', count: Object.keys(onetData).length });
   });
 
   if (process.env.NODE_ENV !== 'production') {
