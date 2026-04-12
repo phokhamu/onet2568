@@ -4,84 +4,724 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบวิเคราะห์ข้อมูลผลการทดสอบ - หน้าหลัก</title>
+    <title>ระบบวิเคราะห์ข้อมูลผลการทดสอบทางการศึกษา</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
-        .card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); padding: 2rem; }
-        .portal-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .portal-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 1.5rem; }
+        .filter-select { border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem; width: 100%; }
+        .tab-btn { padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 0.75rem; transition: all 0.2s; }
+        .tab-btn.active { background-color: #4f46e5; color: white; }
+        .tab-btn:not(.active) { color: #64748b; }
+        .tab-btn:not(.active):hover { background-color: #f1f5f9; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8 bg-slate-50">
-    <div class="max-w-6xl w-full mx-auto">
-        <!-- Header -->
-        <header class="mb-16 text-center">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">ระบบวิเคราะห์ข้อมูลผลการทดสอบ</h1>
-            <p class="text-xl text-slate-600">วิเคราะห์และเปรียบเทียบผลการทดสอบทางการศึกษาระดับชาติ ปีการศึกษา 2568</p>
-        </header>
-
-        <!-- Portal Menu -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- RT Card -->
-            <a href="/rt.html" class="group">
-                <div class="card portal-card h-full flex flex-col items-center text-center border-2 border-transparent hover:border-indigo-500">
-                    <div class="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                        <i data-lucide="file-text" class="w-12 h-12"></i>
-                    </div>
-                    <h2 class="text-3xl font-bold text-slate-800 mb-4">ผลสอบ RT</h2>
-                    <p class="text-slate-500 text-lg leading-relaxed">การประเมินความสามารถในการอ่าน (Reading Test) สำหรับนักเรียนชั้นประถมศึกษาปีที่ 1</p>
-                    <div class="mt-auto pt-8 text-indigo-600 font-bold flex items-center gap-2 text-lg">
-                        เข้าสู่รายงาน
-                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                </div>
-            </a>
-
-            <!-- NT Card -->
-            <a href="/nt.html" class="group">
-                <div class="card portal-card h-full flex flex-col items-center text-center border-2 border-transparent hover:border-blue-500">
-                    <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                        <i data-lucide="file-bar-chart" class="w-12 h-12"></i>
-                    </div>
-                    <h2 class="text-3xl font-bold text-slate-800 mb-4">ผลสอบ NT</h2>
-                    <p class="text-slate-500 text-lg leading-relaxed">การประเมินคุณภาพผู้เรียน (National Test) สำหรับนักเรียนชั้นประถมศึกษาปีที่ 3</p>
-                    <div class="mt-auto pt-8 text-blue-600 font-bold flex items-center gap-2 text-lg">
-                        เข้าสู่รายงาน
-                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                </div>
-            </a>
-
-            <!-- O-NET Card -->
-            <a href="/onet.html" class="group">
-                <div class="card portal-card h-full flex flex-col items-center text-center border-2 border-transparent hover:border-emerald-500">
-                    <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                        <i data-lucide="pie-chart" class="w-12 h-12"></i>
-                    </div>
-                    <h2 class="text-3xl font-bold text-slate-800 mb-4">ผลสอบ O-NET</h2>
-                    <p class="text-slate-500 text-lg leading-relaxed">การทดสอบทางการศึกษาระดับชาติขั้นพื้นฐาน สำหรับนักเรียนชั้น ป.6 และ ม.3</p>
-                    <div class="mt-auto pt-8 text-emerald-600 font-bold flex items-center gap-2 text-lg">
-                        เข้าสู่รายงาน
-                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                </div>
-            </a>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Main Navigation Tabs -->
+        <div class="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+            <button onclick="switchReport('onet')" id="tab-onet" class="tab-btn active flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                ผลสอบ O-NET
+            </button>
+            <button onclick="switchReport('nt')" id="tab-nt" class="tab-btn flex items-center gap-2">
+                <i data-lucide="file-bar-chart" class="w-5 h-5"></i>
+                ผลสอบ NT
+            </button>
+            <button onclick="switchReport('rt')" id="tab-rt" class="tab-btn flex items-center gap-2">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+                ผลสอบ RT
+            </button>
         </div>
 
-        <!-- Footer -->
-        <footer class="mt-20 text-center">
-            <p class="text-slate-400 font-medium">&copy; 2026 ระบบวิเคราะห์ข้อมูลผลการทดสอบทางการศึกษา</p>
-        </footer>
+        <!-- Header -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 id="reportTitle" class="text-3xl font-bold text-slate-800">รายงานผลการสอบ O-NET ปีการศึกษา 2568</h1>
+                <div class="flex items-center gap-4 mt-2">
+                    <p id="reportSubtitle" class="text-slate-500">ชั้นประถมศึกษาปีที่ 6 และ มัธยมศึกษาปีที่ 3</p>
+                    <div id="gradeSelectorContainer" class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm">
+                        <span class="text-slate-500 text-sm font-medium">ระดับชั้น:</span>
+                        <select id="gradeLevel" class="bg-transparent border-none focus:ring-0 text-slate-700 font-bold text-sm" onchange="init()">
+                            <option value="p6">ชั้น ป.6</option>
+                            <option value="m3">ชั้น ม.3</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="init()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    รีเฟรชข้อมูล
+                </button>
+            </div>
+        </header>
+
+        <!-- Overview Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <p class="text-blue-100 text-sm uppercase font-semibold">คะแนนเฉลี่ยรวม</p>
+                <h2 id="avgScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                <p class="text-emerald-100 text-sm uppercase font-semibold">คะแนนสูงสุด</p>
+                <h2 id="maxScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+                <p class="text-amber-100 text-sm uppercase font-semibold">คะแนนต่ำสุด</p>
+                <h2 id="minScore" class="text-4xl font-bold mt-2">0.00</h2>
+            </div>
+            <div class="card bg-gradient-to-br from-slate-700 to-slate-800 text-white">
+                <p id="statLabel" class="text-slate-300 text-sm uppercase font-semibold">จำนวนผู้เข้าสอบ</p>
+                <h2 id="totalStat" class="text-4xl font-bold mt-2">0</h2>
+            </div>
+        </div>
+
+        <!-- Comparison Levels Section -->
+        <div class="mb-8">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">ค่าเฉลี่ยระดับต่างๆ</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="card border-t-4 border-blue-500">
+                    <h4 class="font-bold text-slate-800 mb-3">ระดับประเทศ</h4>
+                    <div class="grid grid-cols-1 gap-y-2 text-sm" id="card-national-grid"></div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-slate-500 text-sm">เฉลี่ยรวม:</span>
+                        <span class="text-xl font-bold text-blue-600" id="card-national-all">0.00</span>
+                    </div>
+                </div>
+                <div class="card border-t-4 border-purple-500">
+                    <h4 class="font-bold text-slate-800 mb-3">ระดับ สพฐ.</h4>
+                    <div class="grid grid-cols-1 gap-y-2 text-sm" id="card-ministry-grid"></div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-slate-500 text-sm">เฉลี่ยรวม:</span>
+                        <span class="text-xl font-bold text-purple-600" id="card-ministry-all">0.00</span>
+                    </div>
+                </div>
+                <div class="card border-t-4 border-amber-500">
+                    <h4 class="font-bold text-slate-800 mb-3">ระดับเขตพื้นที่</h4>
+                    <div class="grid grid-cols-1 gap-y-2 text-sm" id="card-district-grid"></div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-slate-500 text-sm">เฉลี่ยรวม:</span>
+                        <span class="text-xl font-bold text-amber-600" id="card-district-all">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">วิชา/ด้าน</label>
+                <select id="subjectFilter" class="filter-select" onchange="changeSubject()">
+                    <!-- Dynamic Options -->
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">อำเภอ</label>
+                <select id="districtFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">ขนาดโรงเรียน</label>
+                <select id="sizeFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">โรงเรียน</label>
+                <select id="schoolFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">ผลการเปรียบเทียบ</label>
+                <select id="resultFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                    <option value="above">สูงกว่า</option>
+                    <option value="equal">เท่ากับ</option>
+                    <option value="below">ต่ำกว่า</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">เปรียบเทียบกับ</label>
+                <select id="comparisonLevel" class="filter-select" onchange="applyFilters()">
+                    <option value="national">ระดับประเทศ</option>
+                    <option value="ministry">ระดับ สพฐ.</option>
+                    <option value="district">ระดับเขตพื้นที่</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="resetFilters()" class="text-slate-500 hover:text-slate-800 text-sm underline">ล้างตัวกรอง</button>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="card">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">เปรียบเทียบค่าเฉลี่ยรายวิชา/ด้าน</h3>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+            <div class="card">
+                <h3 class="text-lg font-bold mb-4 text-slate-800">คะแนนเฉลี่ยรายอำเภอ</h3>
+                <canvas id="districtChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                <h3 class="text-lg font-bold text-slate-800">ข้อมูลรายโรงเรียน</h3>
+                <div class="flex items-center gap-4">
+                    <button onclick="exportToExcel()" class="flex items-center gap-2 bg-emerald-600 text-white px-3 py-1 rounded-lg hover:bg-emerald-700 transition text-sm">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        ส่งออก Excel
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-600">แสดง:</span>
+                        <select id="pageSize" class="filter-select !w-auto !py-1" onchange="changePageSize()">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">ทั้งหมด</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead id="tableHeader"></thead>
+                    <tbody id="dataTableBody"></tbody>
+                </table>
+            </div>
+            <div id="pagination" class="mt-4 flex justify-center items-center gap-2"></div>
+        </div>
     </div>
 
     <script>
-        // Initialize Lucide icons
-        if (window.lucide) {
-            window.lucide.createIcons();
+        let currentReport = 'onet';
+        let rawData = {};
+        let allData = [];
+        let filteredData = [];
+        let districtChart = null;
+        let comparisonChart = null;
+        let currentPage = 1;
+        let pageSize = 25;
+
+        let COMPARISON_LEVELS = {
+            national: { name: 'ระดับประเทศ' },
+            ministry: { name: 'ระดับ สพฐ.' },
+            district: { name: 'ระดับเขตพื้นที่' }
+        };
+
+        const CONFIGS = {
+            onet: {
+                title: 'รายงานผลการสอบ O-NET ปีการศึกษา 2568',
+                subtitle: 'ชั้นประถมศึกษาปีที่ 6 และ มัธยมศึกษาปีที่ 3',
+                statLabel: 'จำนวนผู้เข้าสอบ',
+                grades: {
+                    p6: { name: 'ชั้น ป.6', url: 'https://docs.google.com/spreadsheets/d/1hKGYH1uB-S9XFSB_Y50-Eksyf57Du0XBJP7iEhoxkkw/export?format=xlsx' },
+                    m3: { name: 'ชั้น ม.3', url: 'https://docs.google.com/spreadsheets/d/1ElqVZMu_lt3HMtqw1j01FsTHIp0OKFT9bZC1xuPJzQo/export?format=xlsx' }
+                },
+                subjects: [
+                    { id: 'all', name: 'ภาพรวมทุกวิชา' },
+                    { id: 'thai', name: 'ภาษาไทย' },
+                    { id: 'math', name: 'คณิตศาสตร์' },
+                    { id: 'sci', name: 'วิทยาศาสตร์' },
+                    { id: 'eng', name: 'ภาษาอังกฤษ' }
+                ],
+                sheetMapping: { 'ภาษาไทย': 'thai', 'คณิตศาสตร์': 'math', 'วิทยาศาสตร์': 'sci', 'ภาษาอังกฤษ': 'eng' }
+            },
+            nt: {
+                title: 'รายงานผลการสอบ NT ปีการศึกษา 2568',
+                subtitle: 'ชั้นประถมศึกษาปีที่ 3 (ป.3)',
+                statLabel: 'จำนวนโรงเรียน',
+                url: 'https://docs.google.com/spreadsheets/d/1cu-0G2xAmXqCTfenXbge0QTGJKJbp7Ne6hGkIk7puNE/export?format=xlsx',
+                subjects: [
+                    { id: 'all', name: 'รวมทุกด้าน' },
+                    { id: 'math', name: 'ด้านคณิตศาสตร์' },
+                    { id: 'thai', name: 'ด้านภาษาไทย' }
+                ]
+            },
+            rt: {
+                title: 'รายงานผลการสอบ RT ปีการศึกษา 2568',
+                subtitle: 'ชั้นประถมศึกษาปีที่ 1 (ป.1)',
+                statLabel: 'จำนวนโรงเรียน',
+                url: 'https://docs.google.com/spreadsheets/d/1UX2_V-b97i9MRh5rGTnqfe2c-nFntCjno4KRwlSKg1Q/export?format=xlsx',
+                subjects: [
+                    { id: 'all', name: 'รวมทุกด้าน' },
+                    { id: 'reading_aloud', name: 'การอ่านออกเสียง' },
+                    { id: 'reading_comprehension', name: 'การอ่านรู้เรื่อง' }
+                ]
+            }
+        };
+
+        function switchReport(report) {
+            currentReport = report;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${report}`).classList.add('active');
+            
+            const config = CONFIGS[report];
+            document.getElementById('reportTitle').textContent = config.title;
+            document.getElementById('reportSubtitle').textContent = config.subtitle;
+            document.getElementById('statLabel').textContent = config.statLabel;
+            
+            const gradeSelector = document.getElementById('gradeSelectorContainer');
+            if (report === 'onet') {
+                gradeSelector.classList.remove('hidden');
+            } else {
+                gradeSelector.classList.add('hidden');
+            }
+
+            // Reset Comparison Levels
+            COMPARISON_LEVELS = {
+                national: { name: 'ระดับประเทศ' },
+                ministry: { name: 'ระดับ สพฐ.' },
+                district: { name: 'ระดับเขตพื้นที่' }
+            };
+
+            // Update Subject Filter
+            const subjectFilter = document.getElementById('subjectFilter');
+            subjectFilter.innerHTML = config.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+            init();
         }
+
+        async function init() {
+            console.log(`Initializing ${currentReport} report...`);
+            const config = CONFIGS[currentReport];
+            let url = config.url;
+            if (currentReport === 'onet') {
+                const gradeKey = document.getElementById('gradeLevel').value;
+                url = config.grades[gradeKey].url;
+            }
+
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'loading-overlay';
+            loadingOverlay.className = 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center';
+            loadingOverlay.innerHTML = `
+                <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-slate-600 font-medium">กำลังโหลดข้อมูล...</p>
+            `;
+            document.body.appendChild(loadingOverlay);
+
+            try {
+                const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                
+                const buffer = await response.arrayBuffer();
+                const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                
+                const newData = {};
+                if (currentReport === 'onet') {
+                    workbook.SheetNames.forEach(sheetName => {
+                        const trimmedName = sheetName.trim();
+                        const id = config.sheetMapping[trimmedName];
+                        if (id) {
+                            newData[id] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        }
+                        if (trimmedName.includes('วิเคราะห์ผล')) {
+                            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                            jsonData.forEach(row => {
+                                const subject = row['วิชา'];
+                                const subKey = Object.keys(config.sheetMapping).find(k => subject.includes(k));
+                                if (subKey) {
+                                    const id = config.sheetMapping[subKey];
+                                    COMPARISON_LEVELS.national[id] = parseFloat(row['คะแนนเฉลี่ย (ประเทศ)']) || 0;
+                                    COMPARISON_LEVELS.ministry[id] = parseFloat(row['คะแนนเฉลี่ย (สพฐ.)']) || 0;
+                                }
+                            });
+                        }
+                    });
+                } else if (currentReport === 'nt') {
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    const ntData = jsonData.slice(3).filter(row => row[1]);
+                    newData['math'] = ntData.map(row => ({ 'รหัสโรงเรียน': row[1], 'ชื่อโรงเรียน': row[2], 'อำเภอที่ตั้งรร.': row[3], 'ขนาดโรงเรียน': row[4], 'คะแนนเฉลี่ย': parseFloat(row[6]) || 0 }));
+                    newData['thai'] = ntData.map(row => ({ 'รหัสโรงเรียน': row[1], 'ชื่อโรงเรียน': row[2], 'อำเภอที่ตั้งรร.': row[3], 'ขนาดโรงเรียน': row[4], 'คะแนนเฉลี่ย': parseFloat(row[8]) || 0 }));
+                } else if (currentReport === 'rt') {
+                    const worksheet = workbook.Sheets['คะแนน RT'];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    const rtData = jsonData.slice(7).filter(row => row[1]);
+                    newData['reading_aloud'] = rtData.map(row => ({ 'รหัสโรงเรียน': row[1], 'ชื่อโรงเรียน': row[2], 'อำเภอที่ตั้งรร.': row[3], 'ขนาดโรงเรียน': row[4], 'คะแนนเฉลี่ย': parseFloat(row[6]) || 0 }));
+                    newData['reading_comprehension'] = rtData.map(row => ({ 'รหัสโรงเรียน': row[1], 'ชื่อโรงเรียน': row[2], 'อำเภอที่ตั้งรร.': row[3], 'ขนาดโรงเรียน': row[4], 'คะแนนเฉลี่ย': parseFloat(row[8]) || 0 }));
+                }
+
+                rawData = newData;
+                calculateDistrictAverages();
+                updateComparisonCards();
+                changeSubject();
+            } catch (error) {
+                console.error('Failed to load data:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
+            } finally {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay) overlay.remove();
+            }
+        }
+
+        function calculateDistrictAverages() {
+            const subjects = CONFIGS[currentReport].subjects.filter(s => s.id !== 'all').map(s => s.id);
+            let totalDistrictAll = 0;
+            let subjectsWithData = 0;
+
+            subjects.forEach(sub => {
+                const data = rawData[sub] || [];
+                if (data.length > 0) {
+                    let totalScore = 0;
+                    let totalWeight = 0;
+                    data.forEach(d => {
+                        const score = parseFloat(d['คะแนนเฉลี่ย (รวม)'] || d['คะแนนเฉลี่ย']) || 0;
+                        const weight = currentReport === 'onet' ? (parseInt(d['จำนวนผู้เข้าสอบ']) || 0) : 1;
+                        if (score > 0 && (currentReport !== 'onet' || weight > 0)) {
+                            totalScore += score * weight;
+                            totalWeight += weight;
+                        }
+                    });
+                    if (totalWeight > 0) {
+                        const avg = totalScore / totalWeight;
+                        COMPARISON_LEVELS.district[sub] = avg;
+                        totalDistrictAll += avg;
+                        subjectsWithData++;
+                    }
+                }
+            });
+
+            if (subjectsWithData > 0) {
+                COMPARISON_LEVELS.district.all = totalDistrictAll / subjectsWithData;
+            }
+
+            if (currentReport === 'onet') {
+                ['national', 'ministry'].forEach(level => {
+                    COMPARISON_LEVELS[level].all = subjects.reduce((sum, s) => sum + (COMPARISON_LEVELS[level][s] || 0), 0) / subjects.length;
+                });
+            } else {
+                ['national', 'ministry'].forEach(level => {
+                    subjects.forEach(s => COMPARISON_LEVELS[level][s] = 0);
+                    COMPARISON_LEVELS[level].all = 0;
+                });
+            }
+        }
+
+        function updateComparisonCards() {
+            const levels = ['national', 'ministry', 'district'];
+            const subjects = CONFIGS[currentReport].subjects.filter(s => s.id !== 'all');
+
+            levels.forEach(level => {
+                const grid = document.getElementById(`card-${level}-grid`);
+                const data = COMPARISON_LEVELS[level];
+                grid.innerHTML = subjects.map(s => `<div class="text-slate-500">${s.name}: <span class="font-bold text-slate-800">${(data[s.id] || 0).toFixed(2)}</span></div>`).join('');
+                document.getElementById(`card-${level}-all`).textContent = (data['all'] || 0).toFixed(2);
+            });
+        }
+
+        function changeSubject() {
+            const subject = document.getElementById('subjectFilter').value;
+            if (subject === 'all') {
+                const schoolMap = new Map();
+                Object.keys(rawData).forEach(subKey => {
+                    rawData[subKey].forEach(d => {
+                        const schoolId = d['รหัสโรงเรียน'];
+                        if (!schoolId) return;
+                        if (!schoolMap.has(schoolId)) {
+                            schoolMap.set(schoolId, {
+                                ...d,
+                                subjectCount: 0,
+                                totalAvg: 0,
+                                scores: {}
+                            });
+                        }
+                        const schoolData = schoolMap.get(schoolId);
+                        const score = parseFloat(d['คะแนนเฉลี่ย (รวม)'] || d['คะแนนเฉลี่ย']) || 0;
+                        if (score > 0) {
+                            schoolData.totalAvg += score;
+                            schoolData.subjectCount++;
+                            schoolData.scores[subKey] = score;
+                        }
+                    });
+                });
+                allData = Array.from(schoolMap.values()).map(d => ({
+                    ...d,
+                    normalizedAvg: d.subjectCount > 0 ? d.totalAvg / d.subjectCount : 0,
+                    normalizedMax: 100,
+                    normalizedMin: 0
+                }));
+            } else {
+                allData = (rawData[subject] || []).map(d => ({
+                    ...d,
+                    normalizedAvg: parseFloat(d['คะแนนเฉลี่ย (รวม)'] || d['คะแนนเฉลี่ย']) || 0,
+                    normalizedMax: parseFloat(d['คะแนนสูงสุด (รวม)'] || d['คะแนนสูงสุด'] || 100) || 100,
+                    normalizedMin: parseFloat(d['คะแนนต่ำสุด (รวม)'] || d['คะแนนต่ำสุด'] || 0) || 0
+                }));
+            }
+            currentPage = 1;
+            populateFilters();
+            applyFilters();
+        }
+
+        function populateFilters() {
+            const districts = [...new Set(allData.map(d => d['อำเภอที่ตั้งรร.']))].filter(Boolean).sort();
+            const sizes = [...new Set(allData.map(d => d['ขนาดโรงเรียน']))].filter(Boolean).sort();
+            
+            const districtSelect = document.getElementById('districtFilter');
+            districtSelect.innerHTML = '<option value="">ทั้งหมด</option>' + districts.map(d => `<option value="${d}">${d}</option>`).join('');
+
+            const sizeSelect = document.getElementById('sizeFilter');
+            sizeSelect.innerHTML = '<option value="">ทั้งหมด</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            updateSchoolFilter();
+        }
+
+        function updateSchoolFilter() {
+            const district = document.getElementById('districtFilter').value;
+            const size = document.getElementById('sizeFilter').value;
+            const schools = [...new Set(allData
+                .filter(d => (!district || d['อำเภอที่ตั้งรร.'] === district) && (!size || d['ขนาดโรงเรียน'] === size))
+                .map(d => d['ชื่อโรงเรียน'])
+            )].sort();
+
+            const schoolSelect = document.getElementById('schoolFilter');
+            schoolSelect.innerHTML = '<option value="">ทั้งหมด</option>' + schools.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        function applyFilters() {
+            const district = document.getElementById('districtFilter').value;
+            const size = document.getElementById('sizeFilter').value;
+            const school = document.getElementById('schoolFilter').value;
+            const result = document.getElementById('resultFilter').value;
+            const subject = document.getElementById('subjectFilter').value;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const comparisonValue = COMPARISON_LEVELS[levelKey][subject] || 0;
+
+            filteredData = allData.filter(d => {
+                const matchDistrict = !district || d['อำเภอที่ตั้งรร.'] === district;
+                const matchSize = !size || d['ขนาดโรงเรียน'] === size;
+                const matchSchool = !school || d['ชื่อโรงเรียน'] === school;
+                let matchResult = true;
+                if (result) {
+                    const score = d['normalizedAvg'];
+                    if (result === 'above') matchResult = score > comparisonValue;
+                    else if (result === 'equal') matchResult = Math.abs(score - comparisonValue) < 0.01;
+                    else if (result === 'below') matchResult = score < comparisonValue;
+                }
+                return matchDistrict && matchSize && matchSchool && matchResult;
+            });
+
+            if (event && (event.target.id === 'districtFilter' || event.target.id === 'sizeFilter')) {
+                updateSchoolFilter();
+            }
+
+            updateOverview();
+            updateCharts();
+            updateTable();
+        }
+
+        function resetFilters() {
+            document.getElementById('districtFilter').value = '';
+            document.getElementById('sizeFilter').value = '';
+            document.getElementById('schoolFilter').value = '';
+            document.getElementById('resultFilter').value = '';
+            updateSchoolFilter();
+            applyFilters();
+        }
+
+        function updateOverview() {
+            const total = currentReport === 'onet' 
+                ? filteredData.reduce((sum, d) => sum + (parseInt(d['จำนวนผู้เข้าสอบ']) || 0), 0)
+                : filteredData.length;
+            
+            const avgScore = filteredData.length > 0
+                ? (currentReport === 'onet' 
+                    ? filteredData.reduce((sum, d) => sum + (d.normalizedAvg * (parseInt(d['จำนวนผู้เข้าสอบ']) || 0)), 0) / filteredData.reduce((sum, d) => sum + (parseInt(d['จำนวนผู้เข้าสอบ']) || 0), 0)
+                    : filteredData.reduce((sum, d) => sum + d.normalizedAvg, 0) / filteredData.length)
+                : 0;
+            
+            const maxScore = filteredData.length > 0 ? Math.max(...filteredData.map(d => d.normalizedAvg)) : 0;
+            const minScore = filteredData.length > 0 ? Math.min(...filteredData.filter(d => d.normalizedAvg > 0).map(d => d.normalizedAvg)) : 0;
+
+            document.getElementById('totalStat').textContent = total.toLocaleString();
+            document.getElementById('avgScore').textContent = avgScore.toFixed(2);
+            document.getElementById('maxScore').textContent = maxScore.toFixed(2);
+            document.getElementById('minScore').textContent = (minScore === Infinity ? 0 : minScore).toFixed(2);
+
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function updateCharts() {
+            const subject = document.getElementById('subjectFilter').value;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const subjects = CONFIGS[currentReport].subjects.filter(s => s.id !== 'all');
+
+            // Comparison Chart
+            const ctxComp = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+
+            const chartLabels = subjects.map(s => s.name);
+            const currentAvgs = subjects.map(s => {
+                let total = 0;
+                let count = 0;
+                filteredData.forEach(d => {
+                    const val = d.scores?.[s.id] || (subject === s.id ? d.normalizedAvg : 0);
+                    if (val > 0) {
+                        total += val;
+                        count++;
+                    }
+                });
+                return count > 0 ? total / count : 0;
+            });
+            const compareAvgs = subjects.map(s => levelData[s.id] || 0);
+
+            comparisonChart = new Chart(ctxComp, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        { label: 'คะแนนเฉลี่ยกลุ่มที่เลือก', data: currentAvgs, backgroundColor: 'rgba(79, 70, 229, 0.8)' },
+                        { label: `ค่าเฉลี่ย${levelData.name}`, data: compareAvgs, backgroundColor: 'rgba(203, 213, 225, 0.8)' }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: currentReport === 'onet' ? 60 : 100 } } }
+            });
+
+            // District Chart
+            const districtData = {};
+            filteredData.forEach(d => {
+                const dist = d['อำเภอที่ตั้งรร.'];
+                if (!districtData[dist]) districtData[dist] = { sum: 0, count: 0 };
+                const weight = currentReport === 'onet' ? (parseInt(d['จำนวนผู้เข้าสอบ']) || 0) : 1;
+                districtData[dist].sum += d.normalizedAvg * weight;
+                districtData[dist].count += weight;
+            });
+
+            const distLabels = Object.keys(districtData).sort();
+            const distAvgs = distLabels.map(l => districtData[l].sum / districtData[l].count);
+
+            const ctxDist = document.getElementById('districtChart').getContext('2d');
+            if (districtChart) districtChart.destroy();
+            districtChart = new Chart(ctxDist, {
+                type: 'bar',
+                data: {
+                    labels: distLabels,
+                    datasets: [{ label: 'คะแนนเฉลี่ยรายอำเภอ', data: distAvgs, backgroundColor: 'rgba(245, 158, 11, 0.8)' }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: currentReport === 'onet' ? 60 : 100 } } }
+            });
+        }
+
+        function updateTable() {
+            const subject = document.getElementById('subjectFilter').value;
+            const thead = document.getElementById('tableHeader');
+            const tbody = document.getElementById('dataTableBody');
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const subjects = CONFIGS[currentReport].subjects.filter(s => s.id !== 'all');
+
+            let headerHtml = `
+                <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="p-4 font-semibold text-slate-700">รหัสโรงเรียน</th>
+                    <th class="p-4 font-semibold text-slate-700">โรงเรียน</th>
+                    <th class="p-4 font-semibold text-slate-700">อำเภอ</th>
+            `;
+            
+            if (subject === 'all') {
+                subjects.forEach(s => headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">${s.name}</th>`);
+                headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ยรวม</th>`;
+            } else {
+                headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">ขนาด/ผู้เข้าสอบ</th>`;
+                headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">คะแนนเฉลี่ย</th>`;
+            }
+            headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">เทียบ${levelData.name}</th></tr>`;
+            thead.innerHTML = headerHtml;
+
+            const sorted = [...filteredData].sort((a, b) => b.normalizedAvg - a.normalizedAvg);
+            const currentSize = pageSize === 'all' ? sorted.length : parseInt(pageSize);
+            const pageData = sorted.slice((currentPage - 1) * currentSize, currentPage * currentSize);
+            const compareAvg = levelData[subject] || 0;
+
+            tbody.innerHTML = '';
+            pageData.forEach(d => {
+                const diff = d.normalizedAvg - compareAvg;
+                const summaryHtml = diff >= 0 
+                    ? `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold">+${diff.toFixed(2)}</span>`
+                    : `<span class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-xs font-bold">${diff.toFixed(2)}</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition';
+                let rowHtml = `
+                    <td class="p-4 text-slate-500 text-sm font-mono">${d['รหัสโรงเรียน']}</td>
+                    <td class="p-4 text-slate-800 font-medium">${d['ชื่อโรงเรียน']}</td>
+                    <td class="p-4 text-slate-600">${d['อำเภอที่ตั้งรร.']}</td>
+                `;
+                
+                if (subject === 'all') {
+                    subjects.forEach(s => rowHtml += `<td class="p-4 text-center text-slate-600">${(d.scores?.[s.id] || 0).toFixed(2)}</td>`);
+                    rowHtml += `<td class="p-4 text-center font-bold text-indigo-600">${d.normalizedAvg.toFixed(2)}</td>`;
+                } else {
+                    rowHtml += `<td class="p-4 text-center text-slate-600">${d['ขนาดโรงเรียน'] || d['จำนวนผู้เข้าสอบ']}</td>`;
+                    rowHtml += `<td class="p-4 text-center font-bold text-indigo-600">${d.normalizedAvg.toFixed(2)}</td>`;
+                }
+                rowHtml += `<td class="p-4 text-center">${summaryHtml}</td>`;
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+
+            updatePagination(sorted.length);
+        }
+
+        function updatePagination(totalItems) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+            if (pageSize === 'all') return;
+            const totalPages = Math.ceil(totalItems / parseInt(pageSize));
+            if (totalPages <= 1) return;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i > 5 && i < totalPages - 1) {
+                    if (i === 6) container.innerHTML += '<span class="px-2">...</span>';
+                    continue;
+                }
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = `px-3 py-1 rounded border ${i === currentPage ? 'bg-indigo-600 text-white border-indigo-600' : 'text-slate-600 border-slate-300 hover:bg-slate-50'}`;
+                btn.onclick = () => { currentPage = i; updateTable(); };
+                container.appendChild(btn);
+            }
+        }
+
+        function changePageSize() {
+            pageSize = document.getElementById('pageSize').value;
+            currentPage = 1;
+            updateTable();
+        }
+
+        function exportToExcel() {
+            const subject = document.getElementById('subjectFilter').value;
+            const levelKey = document.getElementById('comparisonLevel').value;
+            const levelData = COMPARISON_LEVELS[levelKey];
+            const compareAvg = levelData[subject] || 0;
+            const exportData = filteredData.map(d => ({
+                'รหัสโรงเรียน': d['รหัสโรงเรียน'],
+                'โรงเรียน': d['ชื่อโรงเรียน'],
+                'อำเภอ': d['อำเภอที่ตั้งรร.'],
+                'คะแนนเฉลี่ย': d.normalizedAvg.toFixed(2),
+                'ส่วนต่าง': (d.normalizedAvg - compareAvg).toFixed(2)
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Report");
+            XLSX.writeFile(wb, `${currentReport.toUpperCase()}_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) window.lucide.createIcons();
+            switchReport('onet');
+        });
     </script>
 </body>
 </html>

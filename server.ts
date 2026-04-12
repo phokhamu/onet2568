@@ -41,53 +41,12 @@ async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: 'custom',
+      appType: 'spa',
     });
     app.use(vite.middlewares);
-    
-    app.get('/', async (req, res, next) => {
-      try {
-        const template = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
-        const html = await vite.transformIndexHtml(req.url, template);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-      } catch (e) {
-        next(e);
-      }
-    });
-
-    app.get('/:page.html', async (req, res, next) => {
-      const page = req.params.page;
-      const filePath = path.join(__dirname, `${page}.html`);
-      if (fs.existsSync(filePath)) {
-        try {
-          const template = fs.readFileSync(filePath, 'utf-8');
-          const html = await vite.transformIndexHtml(req.url, template);
-          res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-        } catch (e) {
-          next(e);
-        }
-      } else {
-        next();
-      }
-    });
   } else {
     const distPath = path.join(__dirname, 'dist');
     app.use(express.static(distPath));
-    
-    // Serve specific HTML files in production
-    app.get('/:page.html', (req, res, next) => {
-      const page = req.params.page;
-      const filePath = path.join(distPath, `${page}.html`);
-      if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
-      } else {
-        next();
-      }
-    });
-
-    app.get('/rt', (req, res) => res.sendFile(path.join(distPath, 'rt.html')));
-    app.get('/nt', (req, res) => res.sendFile(path.join(distPath, 'nt.html')));
-    app.get('/onet', (req, res) => res.sendFile(path.join(distPath, 'onet.html')));
     
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
