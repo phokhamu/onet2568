@@ -502,18 +502,40 @@
 
         async function fetchReportData(type, url) {
             try {
-                const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                let buffer;
+                let workbook;
+
+                // Try direct fetch first
+                try {
+                    const directResponse = await fetch(url);
+                    if (directResponse.ok) {
+                        buffer = await directResponse.arrayBuffer();
+                        if (buffer.byteLength > 0) {
+                            console.log(`Direct fetch successful for ${type}`);
+                            workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`Direct fetch failed for ${type}, trying proxy...`, e);
                 }
-                
-                const buffer = await response.arrayBuffer();
-                if (buffer.byteLength === 0) throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
-                
-                const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+
+                // Fallback to proxy
+                if (!workbook) {
+                    const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        if (response.status === 404) {
+                            throw new Error('ไม่พบระบบหลังบ้าน (API Proxy) บนโฮสต์นี้ หากคุณใช้ GitHub Pages กรุณาตรวจสอบว่า Google Sheets ตั้งค่าเป็นสาธารณะแล้ว');
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+                    
+                    buffer = await response.arrayBuffer();
+                    if (buffer.byteLength === 0) throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
+                    workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                }
                 
                 let districtAvg = 0;
                 let ministryAvg = 0;
@@ -628,18 +650,41 @@
 
             try {
                 console.log(`Fetching data from: ${url}`);
-                const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                let buffer;
+                let workbook;
+
+                // Try direct fetch first
+                try {
+                    const directResponse = await fetch(url);
+                    if (directResponse.ok) {
+                        buffer = await directResponse.arrayBuffer();
+                        if (buffer.byteLength > 0) {
+                            console.log('Direct fetch successful');
+                            workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Direct fetch failed, trying proxy...', e);
                 }
-                
-                const buffer = await response.arrayBuffer();
-                if (buffer.byteLength === 0) throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
-                
-                const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+
+                // Fallback to proxy if direct fetch failed
+                if (!workbook) {
+                    const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        if (response.status === 404) {
+                            throw new Error('ไม่พบระบบหลังบ้าน (API Proxy) บนโฮสต์นี้ หากคุณใช้ GitHub Pages กรุณาตรวจสอบว่า Google Sheets ตั้งค่าเป็นสาธารณะแล้ว');
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+                    
+                    buffer = await response.arrayBuffer();
+                    if (buffer.byteLength === 0) throw new Error('ได้รับข้อมูลว่างเปล่าจากเซิร์ฟเวอร์');
+                    workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                }
                 
                 const newData = {};
                 if (currentReport === 'onet') {
