@@ -270,6 +270,16 @@
                     <option value="district">ระดับเขตพื้นที่</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">ระดับคุณภาพ</label>
+                <select id="qualityFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="">ทั้งหมด</option>
+                    <option value="excellent">ดีมาก (75-100)</option>
+                    <option value="good">ดี (50-74.99)</option>
+                    <option value="fair">พอใช้ (25-49.99)</option>
+                    <option value="improvement">ปรับปรุง (0-24.99)</option>
+                </select>
+            </div>
             <div class="flex items-end">
                 <button onclick="resetFilters()" class="text-slate-500 hover:text-slate-800 text-sm underline">ล้างตัวกรอง</button>
             </div>
@@ -762,11 +772,19 @@
             schoolSelect.innerHTML = '<option value="">ทั้งหมด</option>' + schools.map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
+        function getQualityLevel(score) {
+            if (score >= 75) return { text: 'ดีมาก', color: 'bg-emerald-500', textColor: 'text-white' };
+            if (score >= 50) return { text: 'ดี', color: 'bg-blue-500', textColor: 'text-white' };
+            if (score >= 25) return { text: 'พอใช้', color: 'bg-amber-500', textColor: 'text-white' };
+            return { text: 'ปรับปรุง', color: 'bg-rose-500', textColor: 'text-white' };
+        }
+
         function applyFilters() {
             const district = document.getElementById('districtFilter').value;
             const size = document.getElementById('sizeFilter').value;
             const school = document.getElementById('schoolFilter').value;
             const result = document.getElementById('resultFilter').value;
+            const quality = document.getElementById('qualityFilter').value;
             const subject = document.getElementById('subjectFilter').value;
             const levelKey = document.getElementById('comparisonLevel').value;
             const comparisonValue = COMPARISON_LEVELS[levelKey][subject] || 0;
@@ -775,6 +793,7 @@
                 const matchDistrict = !district || d['อำเภอที่ตั้งรร.'] === district;
                 const matchSize = !size || d['ขนาดโรงเรียน'] === size;
                 const matchSchool = !school || d['ชื่อโรงเรียน'] === school;
+                
                 let matchResult = true;
                 if (result) {
                     const score = d['normalizedAvg'];
@@ -782,7 +801,17 @@
                     else if (result === 'equal') matchResult = Math.abs(score - comparisonValue) < 0.01;
                     else if (result === 'below') matchResult = score < comparisonValue;
                 }
-                return matchDistrict && matchSize && matchSchool && matchResult;
+
+                let matchQuality = true;
+                if (quality) {
+                    const score = d['normalizedAvg'];
+                    if (quality === 'excellent') matchQuality = score >= 75;
+                    else if (quality === 'good') matchQuality = score >= 50 && score < 75;
+                    else if (quality === 'fair') matchQuality = score >= 25 && score < 50;
+                    else if (quality === 'improvement') matchQuality = score < 25;
+                }
+
+                return matchDistrict && matchSize && matchSchool && matchResult && matchQuality;
             });
 
             if (event && (event.target.id === 'districtFilter' || event.target.id === 'sizeFilter')) {
@@ -799,6 +828,7 @@
             document.getElementById('sizeFilter').value = '';
             document.getElementById('schoolFilter').value = '';
             document.getElementById('resultFilter').value = '';
+            document.getElementById('qualityFilter').value = '';
             updateSchoolFilter();
             applyFilters();
         }
@@ -903,11 +933,22 @@
             `;
             
             if (subject === 'all') {
-                subjects.forEach(s => headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">${s.name}</th>`);
+                subjects.forEach(s => {
+                    headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">${s.name}</th>`;
+                    if (currentReport === 'nt' || currentReport === 'rt') {
+                        headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">คุณภาพ</th>`;
+                    }
+                });
                 headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">เฉลี่ยรวม</th>`;
+                if (currentReport === 'nt' || currentReport === 'rt') {
+                    headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">คุณภาพรวม</th>`;
+                }
             } else {
                 headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">ขนาด/ผู้เข้าสอบ</th>`;
                 headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">คะแนนเฉลี่ย</th>`;
+                if (currentReport === 'nt' || currentReport === 'rt') {
+                    headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">ระดับคุณภาพ</th>`;
+                }
             }
             headerHtml += `<th class="p-4 font-semibold text-slate-700 text-center">เทียบ${levelData.name}</th></tr>`;
             thead.innerHTML = headerHtml;
@@ -933,11 +974,26 @@
                 `;
                 
                 if (subject === 'all') {
-                    subjects.forEach(s => rowHtml += `<td class="p-4 text-center text-slate-600">${(d.scores?.[s.id] || 0).toFixed(2)}</td>`);
+                    subjects.forEach(s => {
+                        const score = d.scores?.[s.id] || 0;
+                        rowHtml += `<td class="p-4 text-center text-slate-600">${score.toFixed(2)}</td>`;
+                        if (currentReport === 'nt' || currentReport === 'rt') {
+                            const q = getQualityLevel(score);
+                            rowHtml += `<td class="p-4 text-center"><span class="px-2 py-1 rounded text-[10px] ${q.color} ${q.textColor}">${q.text}</span></td>`;
+                        }
+                    });
                     rowHtml += `<td class="p-4 text-center font-bold text-indigo-600">${d.normalizedAvg.toFixed(2)}</td>`;
+                    if (currentReport === 'nt' || currentReport === 'rt') {
+                        const q = getQualityLevel(d.normalizedAvg);
+                        rowHtml += `<td class="p-4 text-center"><span class="px-2 py-1 rounded text-[10px] ${q.color} ${q.textColor}">${q.text}</span></td>`;
+                    }
                 } else {
                     rowHtml += `<td class="p-4 text-center text-slate-600">${d['ขนาดโรงเรียน'] || d['จำนวนผู้เข้าสอบ']}</td>`;
                     rowHtml += `<td class="p-4 text-center font-bold text-indigo-600">${d.normalizedAvg.toFixed(2)}</td>`;
+                    if (currentReport === 'nt' || currentReport === 'rt') {
+                        const q = getQualityLevel(d.normalizedAvg);
+                        rowHtml += `<td class="p-4 text-center"><span class="px-2 py-1 rounded text-[10px] ${q.color} ${q.textColor}">${q.text}</span></td>`;
+                    }
                 }
                 rowHtml += `<td class="p-4 text-center">${summaryHtml}</td>`;
                 tr.innerHTML = rowHtml;
@@ -977,13 +1033,39 @@
             const levelKey = document.getElementById('comparisonLevel').value;
             const levelData = COMPARISON_LEVELS[levelKey];
             const compareAvg = levelData[subject] || 0;
-            const exportData = filteredData.map(d => ({
-                'รหัสโรงเรียน': d['รหัสโรงเรียน'],
-                'โรงเรียน': d['ชื่อโรงเรียน'],
-                'อำเภอ': d['อำเภอที่ตั้งรร.'],
-                'คะแนนเฉลี่ย': d.normalizedAvg.toFixed(2),
-                'ส่วนต่าง': (d.normalizedAvg - compareAvg).toFixed(2)
-            }));
+            const subjects = CONFIGS[currentReport].subjects.filter(s => s.id !== 'all');
+
+            const exportData = filteredData.map(d => {
+                const row = {
+                    'รหัสโรงเรียน': d['รหัสโรงเรียน'],
+                    'โรงเรียน': d['ชื่อโรงเรียน'],
+                    'อำเภอ': d['อำเภอที่ตั้งรร.'],
+                };
+
+                if (subject === 'all') {
+                    subjects.forEach(s => {
+                        const score = d.scores?.[s.id] || 0;
+                        row[s.name] = score.toFixed(2);
+                        if (currentReport === 'nt' || currentReport === 'rt') {
+                            row[`คุณภาพ (${s.name})`] = getQualityLevel(score).text;
+                        }
+                    });
+                    row['เฉลี่ยรวม'] = d.normalizedAvg.toFixed(2);
+                    if (currentReport === 'nt' || currentReport === 'rt') {
+                        row['คุณภาพรวม'] = getQualityLevel(d.normalizedAvg).text;
+                    }
+                } else {
+                    row['ขนาด/ผู้เข้าสอบ'] = d['ขนาดโรงเรียน'] || d['จำนวนผู้เข้าสอบ'];
+                    row['คะแนนเฉลี่ย'] = d.normalizedAvg.toFixed(2);
+                    if (currentReport === 'nt' || currentReport === 'rt') {
+                        row['ระดับคุณภาพ'] = getQualityLevel(d.normalizedAvg).text;
+                    }
+                }
+
+                row[`ส่วนต่างเทียบ${levelData.name}`] = (d.normalizedAvg - compareAvg).toFixed(2);
+                return row;
+            });
+
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Report");
