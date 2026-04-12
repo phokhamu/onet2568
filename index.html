@@ -24,7 +24,11 @@
     <div class="max-w-7xl mx-auto">
         <!-- Main Navigation Tabs -->
         <div class="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-            <button onclick="switchReport('onet')" id="tab-onet" class="tab-btn active flex items-center gap-2">
+            <button onclick="switchReport('overview')" id="tab-overview" class="tab-btn active flex items-center gap-2">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                ภาพรวม
+            </button>
+            <button onclick="switchReport('onet')" id="tab-onet" class="tab-btn flex items-center gap-2">
                 <i data-lucide="pie-chart" class="w-5 h-5"></i>
                 ผลสอบ O-NET
             </button>
@@ -38,8 +42,119 @@
             </button>
         </div>
 
-        <!-- Header -->
-        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Overview View -->
+        <div id="overview-view" class="hidden">
+            <div class="grid grid-cols-1 gap-8 mb-8">
+                <div class="card">
+                    <h3 class="text-xl font-bold mb-6 text-slate-800 flex items-center justify-center gap-2">
+                        <i data-lucide="bar-chart-3" class="text-indigo-600"></i>
+                        เปรียบเทียบภาพรวมผลการสอบทั้ง 3 ประเภท
+                    </h3>
+                    <div class="h-[400px] w-full max-w-4xl mx-auto">
+                        <canvas id="overviewComparisonChart"></canvas>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="card bg-white border-l-4 border-indigo-500 hover:shadow-md transition cursor-pointer" onclick="switchReport('onet')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-slate-800">O-NET (ป.6)</h4>
+                                <p class="text-sm text-slate-500 mt-1">เปรียบเทียบค่าเฉลี่ยรวม</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="text-slate-300"></i>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">เขตพื้นที่</p>
+                                <p id="ov-onet_p6-district" class="font-bold text-indigo-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">สพฐ.</p>
+                                <p id="ov-onet_p6-ministry" class="font-bold text-slate-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">ประเทศ</p>
+                                <p id="ov-onet_p6-national" class="font-bold text-slate-600">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-white border-l-4 border-indigo-700 hover:shadow-md transition cursor-pointer" onclick="switchReport('onet')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-slate-800">O-NET (ม.3)</h4>
+                                <p class="text-sm text-slate-500 mt-1">เปรียบเทียบค่าเฉลี่ยรวม</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="text-slate-300"></i>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">เขตพื้นที่</p>
+                                <p id="ov-onet_m3-district" class="font-bold text-indigo-700">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">สพฐ.</p>
+                                <p id="ov-onet_m3-ministry" class="font-bold text-slate-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">ประเทศ</p>
+                                <p id="ov-onet_m3-national" class="font-bold text-slate-600">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-white border-l-4 border-emerald-500 hover:shadow-md transition cursor-pointer" onclick="switchReport('nt')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-slate-800">NT (ป.3)</h4>
+                                <p class="text-sm text-slate-500 mt-1">เปรียบเทียบค่าเฉลี่ยรวม</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="text-slate-300"></i>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">เขตพื้นที่</p>
+                                <p id="ov-nt-district" class="font-bold text-emerald-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">สพฐ.</p>
+                                <p id="ov-nt-ministry" class="font-bold text-slate-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">ประเทศ</p>
+                                <p id="ov-nt-national" class="font-bold text-slate-600">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-white border-l-4 border-amber-500 hover:shadow-md transition cursor-pointer" onclick="switchReport('rt')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-slate-800">RT (ป.1)</h4>
+                                <p class="text-sm text-slate-500 mt-1">เปรียบเทียบค่าเฉลี่ยรวม</p>
+                            </div>
+                            <i data-lucide="chevron-right" class="text-slate-300"></i>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">เขตพื้นที่</p>
+                                <p id="ov-rt-district" class="font-bold text-amber-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">สพฐ.</p>
+                                <p id="ov-rt-ministry" class="font-bold text-slate-600">-</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] text-slate-400 uppercase">ประเทศ</p>
+                                <p id="ov-rt-national" class="font-bold text-slate-600">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report View -->
+        <div id="report-view">
+            <!-- Header -->
+            <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 id="reportTitle" class="text-3xl font-bold text-slate-800">รายงานผลการสอบ O-NET ปีการศึกษา 2568</h1>
                 <div class="flex items-center gap-4 mt-2">
@@ -200,17 +315,26 @@
             </div>
             <div id="pagination" class="mt-4 flex justify-center items-center gap-2"></div>
         </div>
+        </div>
     </div>
 
     <script>
-        let currentReport = 'onet';
+        let currentReport = 'overview';
         let rawData = {};
         let allData = [];
         let filteredData = [];
         let districtChart = null;
         let comparisonChart = null;
+        let overviewChart = null;
         let currentPage = 1;
         let pageSize = 25;
+
+        let OVERVIEW_DATA = {
+            onet_p6: { district: 0, ministry: 0, national: 0 },
+            onet_m3: { district: 0, ministry: 0, national: 0 },
+            nt: { district: 0, ministry: 0, national: 0 },
+            rt: { district: 0, ministry: 0, national: 0 }
+        };
 
         let COMPARISON_LEVELS = {
             national: { name: 'ระดับประเทศ' },
@@ -219,6 +343,11 @@
         };
 
         const CONFIGS = {
+            overview: {
+                title: 'ภาพรวมผลการทดสอบทางการศึกษา',
+                subtitle: 'เปรียบเทียบผลการสอบ O-NET, NT และ RT',
+                statLabel: '-'
+            },
             onet: {
                 title: 'รายงานผลการสอบ O-NET ปีการศึกษา 2568',
                 subtitle: 'ชั้นประถมศึกษาปีที่ 6 และ มัธยมศึกษาปีที่ 3',
@@ -266,30 +395,173 @@
             document.getElementById(`tab-${report}`).classList.add('active');
             
             const config = CONFIGS[report];
-            document.getElementById('reportTitle').textContent = config.title;
-            document.getElementById('reportSubtitle').textContent = config.subtitle;
-            document.getElementById('statLabel').textContent = config.statLabel;
             
-            const gradeSelector = document.getElementById('gradeSelectorContainer');
-            if (report === 'onet') {
-                gradeSelector.classList.remove('hidden');
+            if (report === 'overview') {
+                document.getElementById('overview-view').classList.remove('hidden');
+                document.getElementById('report-view').classList.add('hidden');
+                initOverview();
             } else {
-                gradeSelector.classList.add('hidden');
+                document.getElementById('overview-view').classList.add('hidden');
+                document.getElementById('report-view').classList.remove('hidden');
+                
+                document.getElementById('reportTitle').textContent = config.title;
+                document.getElementById('reportSubtitle').textContent = config.subtitle;
+                document.getElementById('statLabel').textContent = config.statLabel;
+                
+                const gradeSelector = document.getElementById('gradeSelectorContainer');
+                if (report === 'onet') {
+                    gradeSelector.classList.remove('hidden');
+                } else {
+                    gradeSelector.classList.add('hidden');
+                }
+
+                // Reset Comparison Levels
+                COMPARISON_LEVELS = {
+                    national: { name: 'ระดับประเทศ' },
+                    ministry: { name: 'ระดับ สพฐ.' },
+                    district: { name: 'ระดับเขตพื้นที่' }
+                };
+
+                // Update Subject Filter
+                const subjectFilter = document.getElementById('subjectFilter');
+                subjectFilter.innerHTML = config.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+                init();
             }
 
-            // Reset Comparison Levels
-            COMPARISON_LEVELS = {
-                national: { name: 'ระดับประเทศ' },
-                ministry: { name: 'ระดับ สพฐ.' },
-                district: { name: 'ระดับเขตพื้นที่' }
-            };
-
-            // Update Subject Filter
-            const subjectFilter = document.getElementById('subjectFilter');
-            subjectFilter.innerHTML = config.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-
             if (window.lucide) window.lucide.createIcons();
-            init();
+        }
+
+        async function initOverview() {
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'loading-overlay';
+            loadingOverlay.className = 'fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center';
+            loadingOverlay.innerHTML = `
+                <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-slate-600 font-medium">กำลังประมวลผลภาพรวม...</p>
+            `;
+            document.body.appendChild(loadingOverlay);
+
+            try {
+                // Fetch all reports for overview
+                const results = await Promise.all([
+                    fetchReportData('onet', CONFIGS.onet.grades.p6.url),
+                    fetchReportData('onet', CONFIGS.onet.grades.m3.url),
+                    fetchReportData('nt', CONFIGS.nt.url),
+                    fetchReportData('rt', CONFIGS.rt.url)
+                ]);
+
+                OVERVIEW_DATA.onet_p6 = results[0];
+                OVERVIEW_DATA.onet_m3 = results[1];
+                OVERVIEW_DATA.nt = results[2];
+                OVERVIEW_DATA.rt = results[3];
+
+                updateOverviewDashboard();
+            } catch (error) {
+                console.error('Overview initialization failed:', error);
+            } finally {
+                if (document.getElementById('loading-overlay')) document.getElementById('loading-overlay').remove();
+            }
+        }
+
+        async function fetchReportData(type, url) {
+            try {
+                const proxyUrl = `/api/proxy-sheet?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const buffer = await response.arrayBuffer();
+                const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+                
+                let districtAvg = 0;
+                let ministryAvg = 0;
+                let nationalAvg = 0;
+
+                if (type === 'onet') {
+                    const subjects = ['thai', 'math', 'sci', 'eng'];
+                    let totalDistrict = 0;
+                    let count = 0;
+                    
+                    subjects.forEach(sub => {
+                        const sheetName = Object.keys(CONFIGS.onet.sheetMapping).find(k => CONFIGS.onet.sheetMapping[k] === sub);
+                        const sheet = workbook.Sheets[sheetName];
+                        if (sheet) {
+                            const data = XLSX.utils.sheet_to_json(sheet);
+                            let sum = 0, weight = 0;
+                            data.forEach(d => {
+                                const s = parseFloat(d['คะแนนเฉลี่ย (รวม)']) || 0;
+                                const w = parseInt(d['จำนวนผู้เข้าสอบ']) || 0;
+                                if (s > 0 && w > 0) { sum += s * w; weight += w; }
+                            });
+                            if (weight > 0) { totalDistrict += (sum / weight); count++; }
+                        }
+                    });
+                    districtAvg = count > 0 ? totalDistrict / count : 0;
+
+                    // Get National/Ministry from analysis sheet
+                    const analysisSheet = workbook.SheetNames.find(n => n.includes('วิเคราะห์ผล'));
+                    if (analysisSheet) {
+                        const data = XLSX.utils.sheet_to_json(workbook.Sheets[analysisSheet]);
+                        let nSum = 0, mSum = 0, c = 0;
+                        data.forEach(row => {
+                            const n = parseFloat(row['คะแนนเฉลี่ย (ประเทศ)']) || 0;
+                            const m = parseFloat(row['คะแนนเฉลี่ย (สพฐ.)']) || 0;
+                            if (n > 0) { nSum += n; mSum += m; c++; }
+                        });
+                        nationalAvg = c > 0 ? nSum / c : 0;
+                        ministryAvg = c > 0 ? mSum / c : 0;
+                    }
+                } else if (type === 'nt') {
+                    const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).slice(3).filter(r => r[1]);
+                    const scores = data.map(r => (parseFloat(r[6]) + parseFloat(r[8])) / 2).filter(s => s > 0);
+                    districtAvg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                    // NT/RT often don't have national in same sheet, using district as base or 0 if not found
+                    ministryAvg = 0; nationalAvg = 0; 
+                } else if (type === 'rt') {
+                    const data = XLSX.utils.sheet_to_json(workbook.Sheets['คะแนน RT'], { header: 1 }).slice(7).filter(r => r[1]);
+                    const scores = data.map(r => (parseFloat(r[6]) + parseFloat(r[8])) / 2).filter(s => s > 0);
+                    districtAvg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                    ministryAvg = 0; nationalAvg = 0;
+                }
+
+                return { district: districtAvg, ministry: ministryAvg, national: nationalAvg };
+            } catch (e) {
+                console.error(`Error fetching ${type}:`, e);
+                return { district: 0, ministry: 0, national: 0 };
+            }
+        }
+
+        function updateOverviewDashboard() {
+            // Update Text
+            const keys = ['onet_p6', 'onet_m3', 'nt', 'rt'];
+            keys.forEach(k => {
+                const districtEl = document.getElementById(`ov-${k}-district`);
+                const ministryEl = document.getElementById(`ov-${k}-ministry`);
+                const nationalEl = document.getElementById(`ov-${k}-national`);
+                
+                if (districtEl) districtEl.textContent = OVERVIEW_DATA[k].district.toFixed(2);
+                if (ministryEl) ministryEl.textContent = OVERVIEW_DATA[k].ministry > 0 ? OVERVIEW_DATA[k].ministry.toFixed(2) : '-';
+                if (nationalEl) nationalEl.textContent = OVERVIEW_DATA[k].national > 0 ? OVERVIEW_DATA[k].national.toFixed(2) : '-';
+            });
+
+            // Update Chart
+            const ctx = document.getElementById('overviewComparisonChart').getContext('2d');
+            if (overviewChart) overviewChart.destroy();
+
+            overviewChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['O-NET (ป.6)', 'O-NET (ม.3)', 'NT (ป.3)', 'RT (ป.1)'],
+                    datasets: [
+                        { label: 'เขตพื้นที่', data: [OVERVIEW_DATA.onet_p6.district, OVERVIEW_DATA.onet_m3.district, OVERVIEW_DATA.nt.district, OVERVIEW_DATA.rt.district], backgroundColor: 'rgba(21, 128, 61, 0.8)' },
+                        { label: 'สพฐ.', data: [OVERVIEW_DATA.onet_p6.ministry, OVERVIEW_DATA.onet_m3.ministry, OVERVIEW_DATA.nt.ministry, OVERVIEW_DATA.rt.ministry], backgroundColor: 'rgba(234, 179, 8, 0.8)' },
+                        { label: 'ประเทศ', data: [OVERVIEW_DATA.onet_p6.national, OVERVIEW_DATA.onet_m3.national, OVERVIEW_DATA.nt.national, OVERVIEW_DATA.rt.national], backgroundColor: 'rgba(220, 38, 38, 0.8)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
         }
 
         async function init() {
@@ -583,8 +855,8 @@
                 data: {
                     labels: chartLabels,
                     datasets: [
-                        { label: 'คะแนนเฉลี่ยกลุ่มที่เลือก', data: currentAvgs, backgroundColor: 'rgba(79, 70, 229, 0.8)' },
-                        { label: `ค่าเฉลี่ย${levelData.name}`, data: compareAvgs, backgroundColor: 'rgba(203, 213, 225, 0.8)' }
+                        { label: 'คะแนนเฉลี่ยกลุ่มที่เลือก', data: currentAvgs, backgroundColor: 'rgba(21, 128, 61, 0.8)' },
+                        { label: `ค่าเฉลี่ย${levelData.name}`, data: compareAvgs, backgroundColor: levelKey === 'national' ? 'rgba(220, 38, 38, 0.8)' : (levelKey === 'ministry' ? 'rgba(234, 179, 8, 0.8)' : 'rgba(203, 213, 225, 0.8)') }
                     ]
                 },
                 options: { responsive: true, scales: { y: { beginAtZero: true, max: currentReport === 'onet' ? 60 : 100 } } }
@@ -720,7 +992,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) window.lucide.createIcons();
-            switchReport('onet');
+            switchReport('overview');
         });
     </script>
 </body>
