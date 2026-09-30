@@ -335,7 +335,7 @@
 
             <!-- Filter Controls -->
             <div class="card mb-8">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                     <!-- Subject Filter -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">วิชาที่เปรียบเทียบ</label>
@@ -351,7 +351,7 @@
                     <!-- District Filter -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">อำเภอ</label>
-                        <select id="cmpDistrictFilter" class="filter-select font-medium text-slate-700" onchange="applyCompareFilters()">
+                        <select id="cmpDistrictFilter" class="filter-select font-medium text-slate-700" onchange="onCompareDistrictChange()">
                             <option value="">ทั้งหมด (8 อำเภอ)</option>
                         </select>
                     </div>
@@ -359,18 +359,23 @@
                     <!-- Size Filter -->
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">ขนาดโรงเรียน</label>
-                        <select id="cmpSizeFilter" class="filter-select font-medium text-slate-700" onchange="applyCompareFilters()">
-                            <option value="">ทั้งหมด</option>
-                            <option value="เล็ก">ขนาดเล็ก</option>
-                            <option value="กลาง">ขนาดกลาง</option>
-                            <option value="ใหญ่">ขนาดใหญ่</option>
+                        <select id="cmpSizeFilter" class="filter-select font-medium text-slate-700" onchange="onCompareSizeChange()">
+                            <option value="">ทั้งหมด (ทุกขนาด)</option>
+                        </select>
+                    </div>
+
+                    <!-- School Dropdown Filter -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">โรงเรียน</label>
+                        <select id="cmpSchoolFilter" class="filter-select font-medium text-slate-700" onchange="onCompareSchoolChange()">
+                            <option value="">ทั้งหมด (ทุกโรงเรียน)</option>
                         </select>
                     </div>
 
                     <!-- Trend Filter (ผลต่าง สูงขึ้น / ลดลง) -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">ผลการเปรียบเทียบ (แนวโน้ม)</label>
-                        <select id="cmpTrendFilter" class="filter-select font-medium text-slate-700" onchange="applyCompareFilters()">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">ผลการเปรียบเทียบ</label>
+                        <select id="cmpTrendFilter" class="filter-select font-medium text-slate-700" onchange="onCompareFilterChange()">
                             <option value="">ทั้งหมด (ทุกแนวโน้ม)</option>
                             <option value="up" class="text-emerald-700 font-bold">▲ สูงขึ้นเท่านั้น (ผลต่าง &gt; 0)</option>
                             <option value="down" class="text-rose-700 font-bold">▼ ลดลงเท่านั้น (ผลต่าง &lt; 0)</option>
@@ -378,18 +383,18 @@
                         </select>
                     </div>
 
-                    <!-- School Search -->
+                    <!-- School Search Input -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">ค้นหาโรงเรียน</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">ค้นหาชื่อ/รหัส</label>
                         <div class="relative">
-                            <input type="text" id="cmpSearchInput" placeholder="พิมพ์ชื่อหรือรหัสโรงเรียน..." class="filter-select pl-8 text-sm" oninput="applyCompareFilters()">
+                            <input type="text" id="cmpSearchInput" placeholder="พิมพ์ชื่อหรือรหัส..." class="filter-select pl-8 text-sm" oninput="onCompareFilterChange()">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-2.5 top-3"></i>
                         </div>
                     </div>
 
                     <!-- Reset Button -->
                     <div class="flex items-end">
-                        <button onclick="resetCompareFilters()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition text-sm font-medium flex items-center justify-center gap-1.5">
+                        <button onclick="resetCompareFilters()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition text-sm font-medium flex items-center justify-center gap-1.5 shadow-sm">
                             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                             ล้างตัวกรอง
                         </button>
@@ -1548,6 +1553,113 @@
         // COMPARISON 2567 VS 2568 SYSTEM
         // ==========================================
 
+        function normalizeSchoolSize(val) {
+            if (!val) return '';
+            const s = String(val).replace(/\s+/g, '').trim().toLowerCase();
+            if (s.includes('ใหญ่พิเศษ') || s === 'xl' || s === 'extralarge') return 'ใหญ่พิเศษ';
+            if (s.includes('เล็ก') || s === 's' || s === 'small') return 'เล็ก';
+            if (s.includes('กลาง') || s === 'm' || s === 'medium') return 'กลาง';
+            if (s.includes('ใหญ่') || s === 'l' || s === 'large') return 'ใหญ่';
+            if (s === 'ทั่วไป' || s === '-' || s === 'null' || s === 'undefined') return '';
+            return String(val).trim();
+        }
+
+        function formatSchoolSize(val) {
+            const norm = normalizeSchoolSize(val);
+            if (!norm) return 'ทั่วไป';
+            return norm.startsWith('ขนาด') ? norm : `ขนาด${norm}`;
+        }
+
+        function getSizeBadgeClass(size) {
+            const norm = normalizeSchoolSize(size);
+            if (norm === 'เล็ก') return 'bg-sky-50 text-sky-700 border border-sky-200';
+            if (norm === 'กลาง') return 'bg-amber-50 text-amber-700 border border-amber-200';
+            if (norm === 'ใหญ่' || norm === 'ใหญ่พิเศษ') return 'bg-purple-50 text-purple-700 border border-purple-200';
+            return 'bg-slate-100 text-slate-700 border border-slate-200';
+        }
+
+        // Global master registry for all schools across Bueng Kan
+        const globalSchoolMasterMap = new Map();
+
+        function cleanSchoolName(name) {
+            if (!name) return '';
+            return String(name).replace(/^(โรงเรียน|รร\.|รร\s)/, '').trim();
+        }
+
+        function registerSchoolInfo(code, name, district, size) {
+            const normSize = normalizeSchoolSize(size);
+            const dist = String(district || '').trim();
+            const sCode = String(code || '').trim();
+            const sName = String(name || '').trim();
+            const clName = cleanSchoolName(sName);
+
+            const existing = (sCode ? globalSchoolMasterMap.get(sCode) : null) || 
+                             (sName ? globalSchoolMasterMap.get(sName) : null) || 
+                             (clName ? globalSchoolMasterMap.get(clName) : null) || {};
+
+            const merged = {
+                code: sCode || existing.code || '',
+                name: sName || existing.name || '',
+                district: (dist && dist !== 'ไม่ระบุ') ? dist : (existing.district || 'ไม่ระบุ'),
+                size: normSize || existing.size || ''
+            };
+
+            if (sCode) globalSchoolMasterMap.set(sCode, merged);
+            if (sName) globalSchoolMasterMap.set(sName, merged);
+            if (clName) globalSchoolMasterMap.set(clName, merged);
+        }
+
+        function populateMasterSchoolRegistry(workbook) {
+            if (!workbook || !workbook.SheetNames) return;
+            workbook.SheetNames.forEach(sheetName => {
+                try {
+                    const sheet = workbook.Sheets[sheetName];
+                    if (!sheet) return;
+                    const data = XLSX.utils.sheet_to_json(sheet);
+                    data.forEach(r => {
+                        const code = r['รหัสโรงเรียน'] || r['รหัส'] || '';
+                        const name = r['ชื่อโรงเรียน'] || r['ชื่อ'] || '';
+                        const district = r['อำเภอที่ตั้งรร.'] || r['อำเภอ'] || '';
+                        let rawSize = '';
+                        for (const k of Object.keys(r)) {
+                            const lk = k.replace(/\s+/g, ' ').toLowerCase();
+                            if (lk.includes('ขนาด') || lk.includes('size')) {
+                                rawSize = r[k];
+                                break;
+                            }
+                        }
+                        if (code || name) {
+                            registerSchoolInfo(code, name, district, rawSize);
+                        }
+                    });
+                } catch(e) {}
+            });
+        }
+
+        function resolveSchoolInfo(code, name, workbook) {
+            const sCode = String(code || '').trim();
+            const sName = String(name || '').trim();
+            const clName = cleanSchoolName(sName);
+
+            let info = (sCode ? globalSchoolMasterMap.get(sCode) : null) || 
+                       (sName ? globalSchoolMasterMap.get(sName) : null) || 
+                       (clName ? globalSchoolMasterMap.get(clName) : null);
+
+            if ((!info || !info.size) && workbook) {
+                populateMasterSchoolRegistry(workbook);
+                info = (sCode ? globalSchoolMasterMap.get(sCode) : null) || 
+                       (sName ? globalSchoolMasterMap.get(sName) : null) || 
+                       (clName ? globalSchoolMasterMap.get(clName) : null);
+            }
+
+            return info || { size: '', district: 'ไม่ระบุ', name: sName, code: sCode };
+        }
+
+        function getMasterSchoolInfo(workbook) {
+            populateMasterSchoolRegistry(workbook);
+            return globalSchoolMasterMap;
+        }
+
         async function fetchWorkbook(url) {
             let buffer;
             let workbook;
@@ -1634,7 +1746,10 @@
                 if (!wb || forceRefresh) {
                     const url = CONFIGS.onet.grades[compareGrade].url;
                     wb = await fetchWorkbook(url);
-                    if (wb) loadedWorkbooks[compareGrade] = wb;
+                    if (wb) {
+                        loadedWorkbooks[compareGrade] = wb;
+                        populateMasterSchoolRegistry(wb);
+                    }
                 }
 
                 if (!wb) {
@@ -1750,6 +1865,7 @@
                 rows.push(obj);
             }
 
+            const masterInfo = getMasterSchoolInfo(workbook);
             const schools = [];
             rows.forEach((row, idx) => {
                 const codeKey = Object.keys(row).find(k => k.includes('รหัส'));
@@ -1762,10 +1878,24 @@
                 }
 
                 const distKey = Object.keys(row).find(k => k.includes('อำเภอ'));
-                const district = distKey ? String(row[distKey] || '').trim() : '';
+                let district = distKey ? String(row[distKey] || '').trim() : '';
+                if (!district || district === 'ไม่ระบุ') {
+                    const lookedUp = resolveSchoolInfo(code, name, workbook);
+                    if (lookedUp && lookedUp.district) district = lookedUp.district;
+                }
+                if (!district) district = 'ไม่ระบุ';
 
-                const sizeKey = Object.keys(row).find(k => k.includes('ขนาด'));
-                const size = sizeKey ? String(row[sizeKey] || '').trim() : 'ทั่วไป';
+                const sizeKey = Object.keys(row).find(k => {
+                    const lk = k.replace(/\s+/g, ' ').toLowerCase();
+                    return lk.includes('ขนาด') || lk.includes('size');
+                });
+                let rawSize = sizeKey ? String(row[sizeKey] || '').trim() : '';
+                let size = normalizeSchoolSize(rawSize);
+                if (!size || size === 'ทั่วไป') {
+                    const lookedUp = resolveSchoolInfo(code, name, workbook);
+                    if (lookedUp && lookedUp.size) size = normalizeSchoolSize(lookedUp.size);
+                }
+                if (!size) size = 'ทั่วไป';
 
                 // Look for scores 67 and 68
                 const k67 = Object.keys(row).find(k => (k.includes('67') || k.includes('2567')) && (k.includes('รวม') || k.includes('เฉลี่ย') || k.includes('คะแนน')));
@@ -1864,14 +1994,27 @@
                 ? { thai: -1.36, eng: -1.26, math: -3.71, sci: 0.55 }
                 : { thai: -3.84, eng: -3.32, math: -1.69, sci: -1.70 };
 
+            const masterInfo = getMasterSchoolInfo(workbook);
             const schools = [];
             thaiData.forEach((r, idx) => {
                 const code = String(r['รหัสโรงเรียน'] || `SCH-${idx+1}`).trim();
                 const name = String(r['ชื่อโรงเรียน'] || '').trim();
                 if (!name) return;
 
-                const district = String(r['อำเภอที่ตั้งรร.'] || 'ไม่ระบุ').trim();
-                const size = String(r['ขนาดโรงเรียน'] || 'ทั่วไป').trim();
+                let district = String(r['อำเภอที่ตั้งรร.'] || r['อำเภอ'] || 'ไม่ระบุ').trim();
+                if (!district || district === 'ไม่ระบุ') {
+                    const lookedUp = resolveSchoolInfo(code, name, workbook);
+                    if (lookedUp && lookedUp.district) district = lookedUp.district;
+                }
+                if (!district) district = 'ไม่ระบุ';
+
+                let rawSize = r['ขนาดโรงเรียน'] || r['ขนาด\n โรงเรียน'] || r['ขนาด'] || '';
+                let size = normalizeSchoolSize(rawSize);
+                if (!size || size === 'ทั่วไป') {
+                    const lookedUp = resolveSchoolInfo(code, name, workbook);
+                    if (lookedUp && lookedUp.size) size = normalizeSchoolSize(lookedUp.size);
+                }
+                if (!size) size = 'ทั่วไป';
 
                 const thai68 = parseFloat(r['คะแนนเฉลี่ย (รวม)'] || r['คะแนนเฉลี่ย']) || 0;
                 const math68 = mathMap.get(code) || (thai68 * 0.5);
@@ -1930,10 +2073,10 @@
 
         function populateCompareData(grade) {
             const data = compareRawData[grade];
-            if (!data) return;
+            if (!data || !data.schools) return;
 
             // Populate District Filter options
-            const districts = [...new Set(data.schools.map(s => s.district))].filter(Boolean).sort();
+            const districts = [...new Set(data.schools.map(s => s.district))].filter(d => d && d !== 'ไม่ระบุ').sort();
             const distSelect = document.getElementById('cmpDistrictFilter');
             if (distSelect) {
                 const currentVal = distSelect.value;
@@ -1942,6 +2085,112 @@
                 if (districts.includes(currentVal)) distSelect.value = currentVal;
             }
 
+            updateCompareSizeFilterOptions();
+            updateCompareSchoolFilterOptions();
+            applyCompareFilters();
+        }
+
+        function updateCompareSizeFilterOptions() {
+            const gradeData = compareRawData[compareGrade];
+            if (!gradeData || !gradeData.schools) return;
+
+            const distVal = (document.getElementById('cmpDistrictFilter')?.value || '').trim();
+            const sizeSelect = document.getElementById('cmpSizeFilter');
+            if (!sizeSelect) return;
+
+            const currentVal = normalizeSchoolSize(sizeSelect.value);
+
+            // Scope schools to selected district (if any) to get true counts
+            const scopedSchools = distVal 
+                ? gradeData.schools.filter(s => s.district === distVal)
+                : gradeData.schools;
+
+            // Count schools by size in the current scope
+            const countBySize = new Map();
+            scopedSchools.forEach(s => {
+                const sz = normalizeSchoolSize(s.size);
+                if (sz) {
+                    countBySize.set(sz, (countBySize.get(sz) || 0) + 1);
+                }
+            });
+
+            const sizeOrder = ['เล็ก', 'กลาง', 'ใหญ่', 'ใหญ่พิเศษ'];
+            const availableSizes = Array.from(countBySize.keys()).sort((a, b) => {
+                const ia = sizeOrder.indexOf(a);
+                const ib = sizeOrder.indexOf(b);
+                if (ia !== -1 && ib !== -1) return ia - ib;
+                if (ia !== -1) return -1;
+                if (ib !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
+            let sizeOptions = `<option value="">ทั้งหมด (${scopedSchools.length} รร.)</option>`;
+            availableSizes.forEach(sz => {
+                const count = countBySize.get(sz) || 0;
+                const label = formatSchoolSize(sz);
+                sizeOptions += `<option value="${sz}">${label} (${count} รร.)</option>`;
+            });
+
+            sizeSelect.innerHTML = sizeOptions;
+            if (currentVal && availableSizes.includes(currentVal)) {
+                sizeSelect.value = currentVal;
+            } else {
+                sizeSelect.value = '';
+            }
+        }
+
+        function updateCompareSchoolFilterOptions() {
+            const gradeData = compareRawData[compareGrade];
+            if (!gradeData || !gradeData.schools) return;
+
+            const distVal = (document.getElementById('cmpDistrictFilter')?.value || '').trim();
+            const sizeVal = normalizeSchoolSize(document.getElementById('cmpSizeFilter')?.value || '');
+            const schoolSelect = document.getElementById('cmpSchoolFilter');
+            if (!schoolSelect) return;
+
+            const currentSchool = (schoolSelect.value || '').trim();
+
+            const scopedSchools = gradeData.schools.filter(sch => {
+                if (distVal && sch.district !== distVal) return false;
+                if (sizeVal && normalizeSchoolSize(sch.size) !== sizeVal) return false;
+                return true;
+            });
+
+            const uniqueSchoolNames = [...new Set(scopedSchools.map(s => s.name))].sort();
+
+            let schoolOptions = `<option value="">ทั้งหมด (${uniqueSchoolNames.length} รร.)</option>`;
+            uniqueSchoolNames.forEach(name => {
+                schoolOptions += `<option value="${name}">${name}</option>`;
+            });
+
+            schoolSelect.innerHTML = schoolOptions;
+            if (currentSchool && uniqueSchoolNames.includes(currentSchool)) {
+                schoolSelect.value = currentSchool;
+            } else {
+                schoolSelect.value = '';
+            }
+        }
+
+        function onCompareDistrictChange() {
+            compareCurrentPage = 1;
+            updateCompareSizeFilterOptions();
+            updateCompareSchoolFilterOptions();
+            applyCompareFilters();
+        }
+
+        function onCompareSizeChange() {
+            compareCurrentPage = 1;
+            updateCompareSchoolFilterOptions();
+            applyCompareFilters();
+        }
+
+        function onCompareSchoolChange() {
+            compareCurrentPage = 1;
+            applyCompareFilters();
+        }
+
+        function onCompareFilterChange() {
+            compareCurrentPage = 1;
             applyCompareFilters();
         }
 
@@ -1955,11 +2204,14 @@
             const gradeData = compareRawData[compareGrade];
             if (!gradeData || !gradeData.schools) return;
 
-            const distVal = document.getElementById('cmpDistrictFilter').value;
-            const sizeVal = document.getElementById('cmpSizeFilter').value;
-            const trendVal = document.getElementById('cmpTrendFilter').value;
-            const searchVal = (document.getElementById('cmpSearchInput').value || '').trim().toLowerCase();
-            const subject = document.getElementById('cmpSubjectFilter').value;
+            const distVal = (document.getElementById('cmpDistrictFilter')?.value || '').trim();
+            const sizeVal = (document.getElementById('cmpSizeFilter')?.value || '').trim();
+            const schoolVal = (document.getElementById('cmpSchoolFilter')?.value || '').trim();
+            const trendVal = (document.getElementById('cmpTrendFilter')?.value || '').trim();
+            const searchVal = (document.getElementById('cmpSearchInput')?.value || '').trim().toLowerCase();
+            const subject = document.getElementById('cmpSubjectFilter')?.value || 'all';
+
+            const normFilterSize = normalizeSchoolSize(sizeVal);
 
             compareFilteredData = gradeData.schools.map(sch => {
                 // Determine active scores for the selected subject
@@ -1989,7 +2241,11 @@
                 };
             }).filter(sch => {
                 if (distVal && sch.district !== distVal) return false;
-                if (sizeVal && sch.size !== sizeVal) return false;
+                if (normFilterSize) {
+                    const normSchoolSize = normalizeSchoolSize(sch.size);
+                    if (normFilterSize !== normSchoolSize) return false;
+                }
+                if (schoolVal && sch.name !== schoolVal) return false;
                 if (trendVal && sch.activeTrend !== trendVal) return false;
                 if (searchVal) {
                     const matchName = sch.name.toLowerCase().includes(searchVal);
@@ -1998,6 +2254,13 @@
                 }
                 return true;
             });
+
+            // Auto-adjust page if current page exceeds total pages
+            const currentSize = comparePageSize === 'all' ? compareFilteredData.length : parseInt(comparePageSize);
+            const maxPage = Math.max(1, Math.ceil(compareFilteredData.length / (currentSize || 25)));
+            if (compareCurrentPage > maxPage) {
+                compareCurrentPage = 1;
+            }
 
             updateCompareDashboard();
             updateCompareCharts();
@@ -2008,11 +2271,13 @@
             document.getElementById('cmpSubjectFilter').value = 'all';
             document.getElementById('cmpDistrictFilter').value = '';
             document.getElementById('cmpSizeFilter').value = '';
+            const schSelect = document.getElementById('cmpSchoolFilter');
+            if (schSelect) schSelect.value = '';
             document.getElementById('cmpTrendFilter').value = '';
             document.getElementById('cmpSearchInput').value = '';
             compareSubject = 'all';
             compareCurrentPage = 1;
-            applyCompareFilters();
+            populateCompareData(compareGrade);
         }
 
         function updateCompareDashboard() {
@@ -2284,8 +2549,22 @@
                 sci: 'วิทยาศาสตร์'
             };
 
+            const distVal = (document.getElementById('cmpDistrictFilter')?.value || '').trim();
+            const sizeVal = (document.getElementById('cmpSizeFilter')?.value || '').trim();
+            const schoolVal = (document.getElementById('cmpSchoolFilter')?.value || '').trim();
+            const trendVal = (document.getElementById('cmpTrendFilter')?.value || '').trim();
+            const searchVal = (document.getElementById('cmpSearchInput')?.value || '').trim();
+
+            const filterDesc = [];
+            if (distVal) filterDesc.push(`อำเภอ: ${distVal}`);
+            if (sizeVal) filterDesc.push(`ขนาด: ${formatSchoolSize(sizeVal)}`);
+            if (schoolVal) filterDesc.push(`โรงเรียน: ${schoolVal}`);
+            if (trendVal) filterDesc.push(`แนวโน้ม: ${trendVal === 'up' ? 'สูงขึ้น' : (trendVal === 'down' ? 'ลดลง' : 'คงที่')}`);
+            if (searchVal) filterDesc.push(`ค้นหา: "${searchVal}"`);
+            const filterNotice = filterDesc.length > 0 ? ` (ตัวกรอง: ${filterDesc.join(', ')})` : '';
+
             if (subtitleEl) {
-                subtitleEl.textContent = `วิชาที่เลือก: ${subjectLabels[subject]} | จำนวนสถานศึกษาที่ตรงเงื่อนไข: ${compareFilteredData.length} โรงเรียน`;
+                subtitleEl.textContent = `วิชาที่เลือก: ${subjectLabels[subject]} | จำนวนสถานศึกษาที่ตรงเงื่อนไข: ${compareFilteredData.length} โรงเรียน${filterNotice}`;
             }
 
             let headerHtml = `
@@ -2361,7 +2640,11 @@
                     <td class="p-3 text-slate-500 font-mono text-xs">${sch.code}</td>
                     <td class="p-3 font-semibold text-slate-800">${sch.name}</td>
                     <td class="p-3 text-slate-600">${sch.district}</td>
-                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">${sch.size}</span></td>
+                    <td class="p-3 text-center">
+                        <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${getSizeBadgeClass(sch.size)}">
+                            ${formatSchoolSize(sch.size)}
+                        </span>
+                    </td>
                     <td class="p-3 text-center font-medium text-slate-700 bg-indigo-50/30">${sch.activeScore67.toFixed(2)}</td>
                     <td class="p-3 text-center font-bold text-blue-700 bg-blue-50/30">${sch.activeScore68.toFixed(2)}</td>
                     <td class="p-3 text-center text-base">${diffHtml}</td>
@@ -2450,6 +2733,7 @@
                 const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
                 console.log('Uploaded workbook sheet names:', workbook.SheetNames);
 
+                populateMasterSchoolRegistry(workbook);
                 loadedWorkbooks[compareGrade] = workbook;
                 processComparisonData(compareGrade, workbook, true);
                 showNotification(`อัปโหลดและประมวลผลไฟล์ "${file.name}" เรียบร้อยแล้ว`, 'success');
@@ -2477,7 +2761,7 @@
                     'รหัสโรงเรียน': sch.code,
                     'ชื่อโรงเรียน': sch.name,
                     'อำเภอ': sch.district,
-                    'ขนาดโรงเรียน': sch.size,
+                    'ขนาดโรงเรียน': formatSchoolSize(sch.size),
                     'คะแนนเฉลี่ย ปี 2567': sch.activeScore67,
                     'คะแนนเฉลี่ย ปี 2568': sch.activeScore68,
                     'ผลต่าง (68 - 67)': sch.activeDiff,
